@@ -11,7 +11,7 @@ Het hele systeem staat ook als pagina in de app: **`/ontwerp`** (open zonder inl
 - **Beeldmerk:** een kleine *f* waarvan de dwarsbalk een geladen halterstang is (twee schijven per kant), 8° schuin voor beweging, op een volt vierkant met afgeronde hoeken. Bestanden in `static/merk/`; als component `src/lib/Beeldmerk.svelte`.
 - **Woordmerk:** "fits" in Archivo Black, breed (112%), kleine letters, zelfde helling. `src/lib/Woordmerk.svelte`.
 - **Regels:** vrije ruimte rondom minstens een kwart van de breedte; niet kleiner dan 16 px; alleen in volt, inkt (`#0c0d10`) of wit; niet draaien of uitrekken.
-- **App-iconen:** `icoon-192.png`, `icoon-512.png`, `icoon-maskable-512.png` (Android), `apple-touch-icon.png`. Opnieuw maken uit de SVG's kan met elke SVG-naar-PNG-tool.
+- **App-iconen:** `icoon-192.png`, `icoon-512.png`, `icoon-maskable-512.png` (Android). Voor de iPhone (`apple-touch-icon.png`, uit `fits-ios.svg`) is het omgekeerd: een donkere tegel (`#0c0d10`) met een volt *f*. iOS maakt in de donkere modus de achtergrond van een web-app-icoon zwart en kan geen apart donker icoon krijgen; zo blijft de *f* in beide modi zichtbaar. `fits-beeldmerk-donker.svg` is dezelfde variant met afgeronde hoeken. Opnieuw maken uit de SVG's kan met elke SVG-naar-PNG-tool.
 
 ## Kleur
 
