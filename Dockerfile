@@ -1,5 +1,10 @@
 # Stap 1: de app bouwen.
 FROM node:22-slim AS bouw
+# better-sqlite3 wordt bij het installeren gecompileerd; daarvoor zijn Python, make en g++ nodig.
+# Alleen in deze bouwstap: het eindimage hieronder krijgt ze niet.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 make g++ \
+ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
