@@ -10,6 +10,10 @@ export const variables = defineEnvVars({
 		description: 'Client ID van je Strava API-applicatie (strava.com/settings/api). Leeg = Strava staat uit.',
 		schema: (v) => v || undefined
 	},
+	OFF_URL: {
+		description: 'Adres van Open Food Facts. Standaard https://nl.openfoodfacts.org (Nederlandse producten).',
+		schema: (v) => v || undefined
+	},
 	STRAVA_CLIENT_SECRET: {
 		description: 'Client secret van dezelfde Strava-applicatie.',
 		schema: (v) => v || undefined

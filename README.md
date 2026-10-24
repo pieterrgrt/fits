@@ -7,7 +7,9 @@ Persoonlijke sportapp: gym is de hoofdzaak, cardio is extra, groei komt uit gym 
 - **Zondag-check:** dubbele progressie als regels. Fits stelt voor wat zwaarder mag, waar een set af moet, wat na 4 weken stilstand vervangen kan, laat je het wisselslot kiezen en de weekregel invullen.
 - **Schema:** Push/Pull/Legs uit het oorspronkelijke document, met "sinds"-datums. Alles aan te passen.
 - **Oefeningen:** 51 oefeningen met animatie, spierkaart, uitvoering, aandachtspunten en je eigen verloop.
-- **Logboek, doelen, eten en slaap, cardio.** Cardio voer je zelf in; Strava koppelen kan, maar hoeft niet.
+- **Eten (zoals Lifesum):** dagboek per maaltijd, calorie-ring en macro's (eiwit, koolhydraten, vet) op je doelen uit het schema, zoeken in een basislijst en in Open Food Facts (merkproducten), barcode scannen, porties, favorieten, recent, eigen producten, vaste maaltijden en recepten, "zelfde als gisteren", snel calorieën toevoegen, water en vasten. Zie `docs/eten.md`.
+- **Slaap uit Apple Gezondheid:** een opdracht op je iPhone stuurt elke ochtend je slaap (met fasen) en eventueel je gewicht. Zie `docs/gezondheid.md`.
+- **Logboek, doelen, overzicht eten en slaap, cardio.** Cardio voer je zelf in; Strava koppelen kan, maar hoeft niet.
 - **Accounts:** inloggen, uitnodigingen, apparaten beheren, wachtwoord wijzigen, export, account verwijderen.
 
 ## Op je laptop draaien

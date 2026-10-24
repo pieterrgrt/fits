@@ -1,6 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { doe } from '#lib/server/db.js';
 import * as data from '#lib/server/data.js';
+import * as eten from '#lib/server/eten.js';
+import { doelenVan } from '#lib/server/etendoelen.js';
 import { vandaag, weekdag, plusDagen } from '#lib/datum.js';
 import { oefening } from '#lib/oefeningen.js';
 
@@ -26,6 +28,8 @@ export const load = ({ locals }) => {
 		weekschema: alleDagen.map(({ id, weekdag, titel, soort, code }) => ({ id, weekdag, titel, soort, code })),
 		open,
 		dagregel: data.dagregel(g.id, d),
+		eten: eten.dag(g.id, d).totaal,
+		etenDoelen: doelenVan(g.id),
 		gewicht,
 		onderhoud: g.onderhoud,
 		gedaanVandaag: week.trainingen.some((t) => t.datum === d)
@@ -50,17 +54,15 @@ export const actions = {
 	dagregel: async ({ request, locals }) => {
 		const f = await request.formData();
 		const datum = String(f.get('datum') ?? vandaag());
-		const waarden = {
-			slaap: getalOfNull(f.get('slaap'), 0, 16),
-			eiwit: getalOfNull(f.get('eiwit'), 0, 600),
-			kcal: getalOfNull(f.get('kcal'), 0, 10000),
-			gewicht: getalOfNull(f.get('gewicht'), 20, 300)
-		};
+		const waarden = { slaap: getalOfNull(f.get('slaap'), 0, 16), gewicht: getalOfNull(f.get('gewicht'), 20, 300) };
 		if (Object.values(waarden).includes(undefined)) return fail(400, { dagFout: 'Een van de getallen klopt niet.' });
+		const oud = data.dagregel(locals.gebruiker.id, datum);
+		// Slaap die je zelf aanpast, is daarna van jou (niet meer uit Gezondheid).
+		const bron = waarden.slaap === oud.slaap ? (oud.slaap_bron ?? null) : waarden.slaap == null ? null : 'zelf';
 		doe(
-			`INSERT INTO dagregels (gebruiker_id, datum, slaap, eiwit, kcal, gewicht) VALUES (?, ?, ?, ?, ?, ?)
-			 ON CONFLICT (gebruiker_id, datum) DO UPDATE SET slaap = excluded.slaap, eiwit = excluded.eiwit, kcal = excluded.kcal, gewicht = excluded.gewicht`,
-			locals.gebruiker.id, datum, waarden.slaap, waarden.eiwit, waarden.kcal, waarden.gewicht
+			`INSERT INTO dagregels (gebruiker_id, datum, slaap, gewicht, slaap_bron) VALUES (?, ?, ?, ?, ?)
+			 ON CONFLICT (gebruiker_id, datum) DO UPDATE SET slaap = excluded.slaap, gewicht = excluded.gewicht, slaap_bron = excluded.slaap_bron`,
+			locals.gebruiker.id, datum, waarden.slaap, waarden.gewicht, bron
 		);
 		return { opgeslagen: true };
 	}

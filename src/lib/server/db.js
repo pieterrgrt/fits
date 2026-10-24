@@ -175,6 +175,90 @@ const MIGRATIES = [
 		hoogte REAL
 	);
 	CREATE INDEX activiteiten_datum ON activiteiten (gebruiker_id, datum);
+	`,
+	// 2: eten (dagboek zoals Lifesum), water, vasten, slaap uit Apple Gezondheid, API-sleutels
+	`
+	CREATE TABLE producten (
+		id TEXT PRIMARY KEY,                         -- 'basis:…', 'off:<barcode>', 'eigen:<uuid>'
+		gebruiker_id INTEGER REFERENCES gebruikers(id) ON DELETE CASCADE,  -- alleen bij eigen producten
+		bron TEXT NOT NULL,                          -- 'basis', 'off' (Open Food Facts), 'eigen'
+		barcode TEXT,
+		naam TEXT NOT NULL,
+		merk TEXT,
+		eenheid TEXT NOT NULL DEFAULT 'g',           -- voedingswaarden per 100 g of 100 ml
+		kcal REAL NOT NULL DEFAULT 0,
+		eiwit REAL NOT NULL DEFAULT 0,
+		koolh REAL NOT NULL DEFAULT 0,
+		vet REAL NOT NULL DEFAULT 0,
+		vezels REAL,
+		suiker REAL,
+		zout REAL,
+		porties TEXT,                                -- JSON: [[naam, gram], …]
+		bijgewerkt TEXT NOT NULL DEFAULT (datetime('now'))
+	);
+	CREATE INDEX producten_barcode ON producten (barcode);
+	CREATE INDEX producten_naam ON producten (naam COLLATE NOCASE);
+
+	CREATE TABLE eetregels (
+		id INTEGER PRIMARY KEY,
+		gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id) ON DELETE CASCADE,
+		datum TEXT NOT NULL,
+		maaltijd TEXT NOT NULL,                      -- 'ontbijt', 'lunch', 'avond', 'tussendoor'
+		product_id TEXT,                             -- leeg bij snel toevoegen
+		naam TEXT NOT NULL,                          -- vastgelegd, zodat het dagboek klopt als een product verandert
+		hoeveelheid REAL NOT NULL,                   -- in gram/ml (of 1 bij snel toevoegen)
+		portie TEXT,                                 -- bv. '2 × snee'
+		kcal REAL NOT NULL,
+		eiwit REAL NOT NULL,
+		koolh REAL NOT NULL,
+		vet REAL NOT NULL,
+		vezels REAL,
+		suiker REAL,
+		gemaakt TEXT NOT NULL DEFAULT (datetime('now'))
+	);
+	CREATE INDEX eetregels_dag ON eetregels (gebruiker_id, datum);
+	CREATE INDEX eetregels_product ON eetregels (gebruiker_id, product_id);
+
+	CREATE TABLE favorieten (
+		gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id) ON DELETE CASCADE,
+		product_id TEXT NOT NULL,
+		PRIMARY KEY (gebruiker_id, product_id)
+	);
+
+	CREATE TABLE maaltijden (
+		id INTEGER PRIMARY KEY,
+		gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id) ON DELETE CASCADE,
+		naam TEXT NOT NULL,
+		porties INTEGER NOT NULL DEFAULT 1,          -- recept voor zoveel porties
+		items TEXT NOT NULL,                         -- JSON: [{ product_id, naam, hoeveelheid }]
+		gemaakt TEXT NOT NULL DEFAULT (datetime('now'))
+	);
+
+	CREATE TABLE vasten (
+		id INTEGER PRIMARY KEY,
+		gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id) ON DELETE CASCADE,
+		begin TEXT NOT NULL,                         -- ISO, UTC
+		eind TEXT,
+		doel_uren INTEGER NOT NULL DEFAULT 16
+	);
+
+	CREATE TABLE sleutels (
+		id INTEGER PRIMARY KEY,
+		gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id) ON DELETE CASCADE,
+		naam TEXT NOT NULL,
+		hash TEXT NOT NULL UNIQUE,                   -- sha256 van de sleutel
+		begin TEXT NOT NULL,                         -- eerste tekens, om hem te herkennen
+		gemaakt TEXT NOT NULL DEFAULT (datetime('now')),
+		laatst TEXT
+	);
+
+	ALTER TABLE dagregels ADD COLUMN water INTEGER;          -- ml
+	ALTER TABLE dagregels ADD COLUMN slaap_bron TEXT;        -- 'zelf' of 'gezondheid'
+	ALTER TABLE dagregels ADD COLUMN slaap_fasen TEXT;       -- JSON: { diep, kern, rem, wakker } in minuten
+
+	ALTER TABLE gebruikers ADD COLUMN doel_kcal INTEGER;     -- leeg = onderhoud + 400
+	ALTER TABLE gebruikers ADD COLUMN doel_water INTEGER;    -- ml, leeg = 2500
+	ALTER TABLE gebruikers ADD COLUMN macro TEXT;            -- JSON: { vet: procent kcal }
 	`
 ];
 

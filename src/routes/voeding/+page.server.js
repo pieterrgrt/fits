@@ -1,28 +1,33 @@
-import { fail } from '@sveltejs/kit';
-import { alle, doe } from '#lib/server/db.js';
-import * as data from '#lib/server/data.js';
+import { alle } from '#lib/server/db.js';
+import { totalenPerDag } from '#lib/server/eten.js';
+import { doelenVan } from '#lib/server/etendoelen.js';
 import { vandaag, plusDagen } from '#lib/datum.js';
 
 export const load = ({ locals }) => {
-	const g = locals.gebruiker;
+	const g = locals.gebruiker.id;
 	const d = vandaag();
-	return {
-		titel: 'Eten en slaap',
-		datum: d,
-		profiel: { gewicht: data.laatsteGewicht(g.id)?.gewicht ?? g.gewicht, onderhoud: g.onderhoud },
-		regels: alle('SELECT * FROM dagregels WHERE gebruiker_id = ? AND datum > ? ORDER BY datum DESC', g.id, plusDagen(d, -14)),
-		weken: alle('SELECT * FROM weekregels WHERE gebruiker_id = ? ORDER BY week DESC LIMIT 12', g.id)
-	};
-};
-
-export const actions = {
-	profiel: async ({ request, locals }) => {
-		const f = await request.formData();
-		const gewicht = f.get('gewicht') ? Number(String(f.get('gewicht')).replace(',', '.')) : null;
-		const onderhoud = f.get('onderhoud') ? Number(f.get('onderhoud')) : null;
-		if ((gewicht != null && !(gewicht > 20 && gewicht < 300)) || (onderhoud != null && !(onderhoud > 800 && onderhoud < 7000)))
-			return fail(400, { fout: 'Controleer gewicht en calorieën.' });
-		doe('UPDATE gebruikers SET gewicht = ?, onderhoud = ? WHERE id = ?', gewicht, onderhoud, locals.gebruiker.id);
-		return { ok: true };
-	}
+	const van = plusDagen(d, -27);
+	const eten = totalenPerDag(g, van, d);
+	const regels = Object.fromEntries(alle('SELECT * FROM dagregels WHERE gebruiker_id = ? AND datum BETWEEN ? AND ?', g, van, d).map((r) => [r.datum, r]));
+	const dagen = Array.from({ length: 28 }, (_, i) => {
+		const datum = plusDagen(d, -i);
+		const e = eten[datum];
+		const r = regels[datum] ?? {};
+		return {
+			datum,
+			kcal: e?.kcal ?? r.kcal ?? null,
+			eiwit: e?.eiwit ?? r.eiwit ?? null,
+			slaap: r.slaap ?? null,
+			slaapBron: r.slaap_bron ?? null,
+			fasen: r.slaap_fasen ? JSON.parse(r.slaap_fasen) : null,
+			water: r.water ?? null,
+			gewicht: r.gewicht ?? null
+		};
+	});
+	const gewicht = alle(
+		`SELECT datum, gewicht FROM dagregels WHERE gebruiker_id = ? AND gewicht IS NOT NULL AND datum >= ?
+		 UNION SELECT week, gewicht FROM weekregels WHERE gebruiker_id = ? AND gewicht IS NOT NULL AND week >= ? ORDER BY 1`,
+		g, plusDagen(d, -180), g, plusDagen(d, -180)
+	);
+	return { titel: 'Overzicht eten en slaap', datum: d, dagen, gewicht, doelen: doelenVan(g) };
 };

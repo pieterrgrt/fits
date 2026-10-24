@@ -1,17 +1,22 @@
 <script>
-	import { enhance } from '$app/forms';
 	import { mooi } from '#lib/datum.js';
 	import { getal } from '#lib/gewicht.js';
+	import Verloop from '#lib/Verloop.svelte';
 	import Icoon from '#lib/Icoon.svelte';
 
-	let { data, form } = $props();
-	const p = $derived(data.profiel);
-	const eiwit = $derived(p.gewicht ? [Math.round(p.gewicht * 1.8), Math.round(p.gewicht * 2)] : null);
-	const kcal = $derived(p.onderhoud ? [p.onderhoud + 300, p.onderhoud + 500] : null);
-	const gem = (k) => {
-		const w = data.regels.map((r) => r[k]).filter((v) => v != null);
+	let { data } = $props();
+	const d = $derived(data.doelen);
+	const week = $derived(data.dagen.slice(0, 7));
+	const gem = (lijst, k) => {
+		const w = lijst.map((r) => r[k]).filter((v) => v != null && v !== 0);
 		return w.length ? w.reduce((a, b) => a + b, 0) / w.length : null;
 	};
+	const eiwitDagen = $derived(week.filter((r) => r.eiwit >= d.eiwit[0]).length);
+	const kcalDagen = $derived(week.filter((r) => r.kcal >= d.bereik[0] && r.kcal <= d.bereik[1] + 200).length);
+	const slaapNachten = $derived(week.filter((r) => r.slaap >= 8).length);
+	const punten = $derived(data.gewicht.map((r) => ({ datum: r.datum, waarde: r.gewicht, tekst: `${mooi(r.datum)} · ${getal(r.gewicht)} kg` })));
+	const toename = $derived(punten.length > 1 ? Math.round((punten[punten.length - 1].waarde - punten[0].waarde) * 10) / 10 : null);
+	const FASE = { diep: 'diep', kern: 'kern', rem: 'REM' };
 </script>
 
 <main class="app stapel ruim">
@@ -20,70 +25,62 @@
 		<h1>Eten en slaap</h1>
 	</header>
 
-	<div class="raster drie">
-		<div class="kaart stat" style="--accent: var(--amber)">
-			<span class="label">Eiwit per dag</span>
-			<span class="waarde" style="color: var(--amber)">{eiwit ? `${eiwit[0]}–${eiwit[1]}` : '?'}<small>g</small></span>
-			<span class="klein gedempt">1,8–2 g per kg</span>
+	<section class="stapel">
+		<div class="rij uiteen"><h2>Afgelopen 7 dagen</h2><a class="klein" href="/eten/doelen">Doelen</a></div>
+		<div class="raster twee">
+			<div class="kaart stat"><span class="label">Eiwitdoel gehaald</span><span class="waarde" style="color: var(--amber)">{eiwitDagen}<small>/7 dagen</small></span><span class="klein gedempt">gem. {gem(week, 'eiwit') ? Math.round(gem(week, 'eiwit')) : '–'} g · doel {d.eiwit[0]}+</span></div>
+			<div class="kaart stat"><span class="label">Calorieën op doel</span><span class="waarde" style="color: var(--amber)">{kcalDagen}<small>/7 dagen</small></span><span class="klein gedempt">gem. {gem(week, 'kcal') ? Math.round(gem(week, 'kcal')) : '–'} · doel {d.bereik[0]}–{d.bereik[1]}</span></div>
+			<div class="kaart stat"><span class="label">8+ uur slaap</span><span class="waarde" style="color: var(--lila)">{slaapNachten}<small>/7 nachten</small></span><span class="klein gedempt">gem. {gem(week, 'slaap') ? getal(Math.round(gem(week, 'slaap') * 10) / 10) : '–'} u</span></div>
+			<div class="kaart stat"><span class="label">Water</span><span class="waarde" style="color: var(--water)">{gem(week, 'water') ? getal(Math.round(gem(week, 'water') / 100) / 10) : '–'}<small>L gem.</small></span><span class="klein gedempt">doel {getal(d.water / 1000)} L</span></div>
 		</div>
-		<div class="kaart stat">
-			<span class="label">Calorieën</span>
-			<span class="waarde" style="color: var(--amber)">{kcal ? `${kcal[0]}–${kcal[1]}` : '+300–500'}</span>
-			<span class="klein gedempt">boven onderhoud</span>
-		</div>
-		<div class="kaart stat">
-			<span class="label">Slaap</span>
-			<span class="waarde" style="color: var(--lila)">8+<small>uur</small></span>
-			<span class="klein gedempt">elke nacht</span>
-		</div>
-	</div>
-
-	<form method="POST" action="?/profiel" class="kaart raster twee" use:enhance={() => async ({ update }) => update({ reset: false })}>
-		<label class="veld"><span>Lichaamsgewicht (kg)</span><input name="gewicht" inputmode="decimal" value={p.gewicht ? getal(p.gewicht) : ''} /><small>Je laatst gelogde gewicht telt.</small></label>
-		<label class="veld"><span>Onderhoud (kcal per dag)</span><input name="onderhoud" inputmode="numeric" value={p.onderhoud ?? ''} placeholder="bv. 2600" /><small>Weet je het niet? Begin met gewicht × 33.</small></label>
-		<button class="knop omlijnd" style="grid-column: 1 / -1">{form?.ok ? 'Opgeslagen ✓' : 'Opslaan'}</button>
-		{#if form?.fout}<p class="melding fout" style="grid-column: 1 / -1">{form.fout}</p>{/if}
-	</form>
+	</section>
 
 	<section class="stapel">
-		<div class="rij uiteen">
-			<h2>Twee weken</h2>
-			<span class="klein gedempt">gem. {gem('eiwit') ? Math.round(gem('eiwit')) + ' g eiwit' : '–'} · {gem('slaap') ? getal(Math.round(gem('slaap') * 10) / 10) + ' u slaap' : '–'}</span>
-		</div>
-		{#if data.regels.length}
-			<div class="kaart">
-				<ul class="lijst">
-					{#each data.regels as r}
-						<li class="regel">
-							<span class="klein gedempt">{mooi(r.datum, { dag: true })}</span>
-							<div class="balk" title="Eiwit" style="--balk-kleur: var(--amber)"><span style="--waarde: {eiwit && r.eiwit ? Math.min(100, (r.eiwit / eiwit[0]) * 100) : 0}%"></span></div>
-							<span class="klein tnum">{r.eiwit ?? '–'} g</span>
-							<div class="balk" title="Slaap" style="--balk-kleur: var(--lila)"><span style="--waarde: {r.slaap ? Math.min(100, (r.slaap / 8) * 100) : 0}%"></span></div>
-							<span class="klein tnum">{r.slaap != null ? getal(r.slaap) + ' u' : '–'}</span>
-						</li>
-					{/each}
-				</ul>
-			</div>
+		<div class="rij uiteen"><h2>Gewicht</h2>{#if toename != null}<span class="chip" class:volt={toename > 0}>{toename > 0 ? '+' : ''}{getal(toename)} kg</span>{/if}</div>
+		{#if punten.length > 1}
+			<div class="kaart"><Verloop {punten} decimalen={1} onderschrift="Lichaamsgewicht, laatste 6 maanden. Doel: +2 tot +3 kg in 3 maanden." /></div>
 		{:else}
-			<p class="leeg">Vul elke dag je dagregel in op <a href="/">Vandaag</a>: slaap, eiwit en (af en toe) je gewicht.</p>
+			<p class="leeg">Vul af en toe je gewicht in op Vandaag, of laat het meekomen uit <a href="/gezondheid">Apple Gezondheid</a>.</p>
 		{/if}
 	</section>
 
-	{#if data.weken.length}
-		<section class="stapel">
-			<h2>Weekregels</h2>
-			<div class="kaart">
-				<ul class="lijst tnum klein">
-					{#each data.weken as w}
-						<li class="rij uiteen"><span class="gedempt">week van {mooi(w.week)}</span><span>slaap {w.slaap != null ? getal(w.slaap) : '–'} u · energie {w.energie ?? '–'}/10 · {w.gewicht != null ? getal(w.gewicht) + ' kg' : '–'}{w.gemist ? ` · gemist: ${w.gemist}` : ''}</span></li>
-					{/each}
-				</ul>
-			</div>
-		</section>
-	{/if}
+	<section class="stapel">
+		<h2>Per dag</h2>
+		<div class="kaart">
+			<ul class="lijst">
+				{#each data.dagen.slice(0, 14) as r (r.datum)}
+					<li class="dag">
+						<a href="/eten?datum={r.datum}" class="klein gedempt">{mooi(r.datum, { dag: true })}</a>
+						<div class="stapel krap">
+							<div class="regel">
+								<div class="balk" style="--balk-kleur: var(--amber)"><span style="--waarde: {r.eiwit ? Math.min(100, (r.eiwit / d.eiwit[0]) * 100) : 0}%"></span></div>
+								<span class="klein tnum">{r.eiwit != null ? Math.round(r.eiwit) + ' g' : '–'}</span>
+							</div>
+							<div class="regel">
+								<div class="balk" style="--balk-kleur: var(--lila)"><span style="--waarde: {r.slaap ? Math.min(100, (r.slaap / 8) * 100) : 0}%"></span></div>
+								<span class="klein tnum">{r.slaap != null ? getal(r.slaap) + ' u' : '–'}</span>
+							</div>
+							{#if r.fasen && Object.keys(r.fasen).some((f) => FASE[f])}
+								<span class="klein gedempt">{Object.entries(r.fasen).filter(([f]) => FASE[f]).map(([f, m]) => `${FASE[f]} ${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`).join(' · ')}</span>
+							{/if}
+						</div>
+						<span class="klein tnum gedempt kcal">{r.kcal != null ? Math.round(r.kcal) : '–'}<br />kcal</span>
+					</li>
+				{/each}
+			</ul>
+		</div>
+		<p class="klein gedempt"><span style="color: var(--amber)">■</span> eiwit t.o.v. {d.eiwit[0]} g · <span style="color: var(--lila)">■</span> slaap t.o.v. 8 uur</p>
+	</section>
+
+	<a class="kaart rij uiteen" href="/gezondheid" style="text-decoration: none">
+		<span class="stapel krap" style="gap: 0"><strong>Slaap automatisch uit Apple Gezondheid</strong><span class="klein gedempt">Met een opdracht op je iPhone, elke ochtend.</span></span>
+		<Icoon naam="pijl" />
+	</a>
 </main>
 
 <style>
-	.stat .waarde { font-size: var(--maat-l); }
-	.regel { display: grid; grid-template-columns: 5.5rem 1fr 3.25rem 1fr 3rem; gap: var(--r-2); align-items: center; }
+	.dag { display: grid; grid-template-columns: 5.5rem 1fr 3rem; gap: var(--r-3); align-items: center; }
+	.dag a { text-decoration: none; }
+	.regel { display: grid; grid-template-columns: 1fr 2.75rem; gap: var(--r-2); align-items: center; }
+	.kcal { text-align: right; line-height: 1.2; }
 </style>

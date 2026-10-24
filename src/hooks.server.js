@@ -2,7 +2,8 @@ import { redirect } from '@sveltejs/kit';
 import { COOKIE, leesSessie } from '#lib/server/auth.js';
 
 // Pagina's die je zonder in te loggen mag zien.
-const OPEN = ['/inloggen', '/registreren', '/ontwerp', '/gezond'];
+// /api/… regelt zelf de toegang (met een persoonlijke sleutel).
+const OPEN = ['/inloggen', '/registreren', '/ontwerp', '/gezond', '/api'];
 
 export async function handle({ event, resolve }) {
 	const token = event.cookies.get(COOKIE);
@@ -21,6 +22,7 @@ export async function handle({ event, resolve }) {
 	antwoord.headers.set('X-Frame-Options', 'DENY');
 	antwoord.headers.set('X-Content-Type-Options', 'nosniff');
 	antwoord.headers.set('Referrer-Policy', 'same-origin');
-	antwoord.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+	// Camera alleen voor Fits zelf (barcode scannen).
+	antwoord.headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
 	return antwoord;
 }

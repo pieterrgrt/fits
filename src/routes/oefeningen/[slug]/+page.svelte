@@ -12,7 +12,8 @@
 	const punten = $derived(
 		[...data.geschiedenis].reverse().map((s) => {
 			const beste = s.sets.reduce((a, b) => ((b.gewicht ?? 0) * (1 + b.reps / 30) > (a.gewicht ?? 0) * (1 + a.reps / 30) ? b : a), s.sets[0]);
-			return { datum: s.datum, gewicht: beste.gewicht ?? 0, reps: beste.reps, e1rm: (beste.gewicht ?? 0) * (1 + beste.reps / 30) };
+			const e1rm = (beste.gewicht ?? 0) * (1 + beste.reps / 30);
+			return { datum: s.datum, waarde: e1rm, tekst: `${s.datum} · ${beste.gewicht ?? 0} × ${beste.reps} · ≈ ${Math.round(e1rm)} kg 1RM` };
 		})
 	);
 </script>
@@ -78,7 +79,7 @@
 	<section class="stapel">
 		<h2>Jouw verloop</h2>
 		{#if punten.length > 1}
-			<div class="kaart"><Verloop {punten} /></div>
+			<div class="kaart"><Verloop {punten} onderschrift="Geschatte 1RM van je beste set per sessie" /></div>
 		{/if}
 		{#if data.geschiedenis.length}
 			<ul class="lijst kaart">

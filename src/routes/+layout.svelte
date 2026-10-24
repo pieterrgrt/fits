@@ -11,11 +11,11 @@
 	const TABS = [
 		{ href: '/', naam: 'Vandaag', icoon: 'vandaag' },
 		{ href: '/schema', naam: 'Schema', icoon: 'schema' },
+		{ href: '/eten', naam: 'Eten', icoon: 'eten' },
 		{ href: '/logboek', naam: 'Logboek', icoon: 'logboek' },
-		{ href: '/oefeningen', naam: 'Oefeningen', icoon: 'oefeningen' },
 		{ href: '/meer', naam: 'Meer', icoon: 'meer' }
 	];
-	const MEER = ['/meer', '/zondag', '/doelen', '/cardio', '/account', '/beheer', '/uitleg', '/voeding'];
+	const MEER = ['/meer', '/zondag', '/doelen', '/cardio', '/account', '/beheer', '/uitleg', '/voeding', '/oefeningen', '/gezondheid'];
 	const actief = (href) => {
 		const p = page.url.pathname;
 		if (href === '/') return p === '/' || p.startsWith('/training');

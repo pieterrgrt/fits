@@ -24,6 +24,8 @@ Vier pijlers, elk een eigen kleur. Groei = gym + eten + slaap; cardio is extra.
 | Lila | `--lila` | `#a99bff` | slaap en herstel |
 | Koraal | `--koraal` | `#ff6b4a` | cardio, Strava |
 
+Daarnaast `--water` (`#5ab4ff`) voor water in het eetdagboek.
+
 Basis: ijzergrijzen (`--ijzer-0` t/m `5`) en krijtwit (`--krijt-1` t/m `3`). Componenten gebruiken alleen **rollen**: `--achtergrond`, `--vlak`, `--vlak-hoog`, `--lijn`, `--lijn-sterk`, `--tekst`, `--tekst-rustig`, `--tekst-gedempt`, `--accent`, `--op-accent`. Zo werkt licht en donker vanzelf.
 
 - Donker is de standaard; licht volgt de systeeminstelling (of `data-thema="licht"` op `<html>`).

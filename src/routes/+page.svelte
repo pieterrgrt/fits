@@ -10,7 +10,9 @@
 
 	const wd = $derived(weekdag(data.datum));
 	const gymDagen = $derived(data.weekschema.filter((d) => d.soort === 'gym').length);
-	const eiwitDoel = $derived(data.gewicht ? [Math.round(data.gewicht * 1.8), Math.round(data.gewicht * 2)] : null);
+	const eiwitDoel = $derived(data.etenDoelen.eiwit);
+	// Eiwit uit het eetdagboek; oude dagen zonder dagboek: wat je toen met de hand invulde.
+	const eiwitVandaag = $derived(data.eten.eiwit || data.dagregel.eiwit || 0);
 	const cardio = $derived(data.week.activiteiten.length);
 	const isBeen = (d) => d?.code?.startsWith('legs');
 	const geenCardio = $derived(isBeen(data.gisteren) || isBeen(data.morgen));
@@ -85,9 +87,9 @@
 				<Ring waarde={data.week.trainingen.length / gymDagen} kleur="volt"><Icoon naam="oefeningen" grootte={20} /></Ring>
 				<span class="stat"><span class="label">Gym</span><span class="waarde">{data.week.trainingen.length}<small>/{gymDagen}</small></span></span>
 			</a>
-			<a class="kaart pijler" href="/voeding">
-				<Ring waarde={eiwitDoel && data.dagregel.eiwit ? data.dagregel.eiwit / eiwitDoel[0] : 0} kleur="amber"><Icoon naam="eten" grootte={20} /></Ring>
-				<span class="stat"><span class="label">Eiwit vandaag</span><span class="waarde">{data.dagregel.eiwit ?? '–'}<small>/{eiwitDoel ? eiwitDoel[0] : '?'} g</small></span></span>
+			<a class="kaart pijler" href="/eten">
+				<Ring waarde={eiwitVandaag / eiwitDoel[0]} kleur="amber"><Icoon naam="eten" grootte={20} /></Ring>
+				<span class="stat"><span class="label">Eiwit vandaag</span><span class="waarde">{Math.round(eiwitVandaag) || '–'}<small>/{eiwitDoel[0]} g</small></span></span>
 			</a>
 			<a class="kaart pijler" href="/voeding">
 				<Ring waarde={(data.dagregel.slaap ?? 0) / 8} kleur="lila"><Icoon naam="slaap" grootte={20} /></Ring>
@@ -117,13 +119,23 @@
 		{/each}
 	</section>
 
+	<!-- Eten vandaag -->
+	<a class="kaart eten-kaart" href="/eten">
+		<div class="stapel krap" style="gap: 2px">
+			<span class="label" style="color: var(--amber)">Eten vandaag</span>
+			<span class="tnum"><strong class="groot">{Math.round(data.eten.kcal)}</strong><span class="gedempt"> / {data.etenDoelen.kcal} kcal</span></span>
+			<span class="klein rustig tnum">{Math.round(data.eten.eiwit)} g eiwit · {Math.round(data.eten.koolh)} g koolh. · {Math.round(data.eten.vet)} g vet</span>
+		</div>
+		<span class="knop primair vierkant" aria-hidden="true"><Icoon naam="plus" /></span>
+	</a>
+
 	<!-- Dagregel -->
 	<section class="kaart stapel">
 		<div class="rij uiteen"><h2>Dagregel</h2><span class="klein gedempt">{mooi(data.datum, { dag: true })}</span></div>
 		<form
 			method="POST"
 			action="?/dagregel"
-			class="raster vier"
+			class="raster twee"
 			use:enhance={() => async ({ update, result }) => {
 				await update({ reset: false });
 				opgeslagen = result.type === 'success';
@@ -131,16 +143,15 @@
 			}}
 		>
 			<input type="hidden" name="datum" value={data.datum} />
-			<label class="veld"><span>Slaap (uur)</span><input name="slaap" inputmode="decimal" placeholder="8" value={data.dagregel.slaap ?? ''} /></label>
-			<label class="veld"><span>Eiwit (g)</span><input name="eiwit" inputmode="numeric" placeholder={eiwitDoel?.[0] ?? '150'} value={data.dagregel.eiwit ?? ''} /></label>
-			<label class="veld"><span>kcal</span><input name="kcal" inputmode="numeric" placeholder={data.onderhoud ? String(data.onderhoud + 400) : ''} value={data.dagregel.kcal ?? ''} /></label>
-			<label class="veld"><span>Gewicht (kg)</span><input name="gewicht" inputmode="decimal" placeholder={data.gewicht ? getal(data.gewicht) : '75'} value={data.dagregel.gewicht ?? ''} /></label>
+			<label class="veld">
+				<span>Slaap vannacht (uur)</span>
+				<input name="slaap" inputmode="decimal" placeholder="8" value={data.dagregel.slaap != null ? getal(data.dagregel.slaap) : ''} />
+				{#if data.dagregel.slaap_bron === 'gezondheid'}<small style="color: var(--lila)">uit Apple Gezondheid</small>{:else}<small><a href="/gezondheid">Automatisch uit Gezondheid?</a></small>{/if}
+			</label>
+			<label class="veld"><span>Gewicht (kg)</span><input name="gewicht" inputmode="decimal" placeholder={data.gewicht ? getal(data.gewicht) : '75'} value={data.dagregel.gewicht != null ? getal(data.dagregel.gewicht) : ''} /><small>Af en toe, nuchter</small></label>
 			<button class="knop omlijnd" style="grid-column: 1 / -1">{#if opgeslagen}<Icoon naam="vink" /> Opgeslagen{:else}Opslaan{/if}</button>
 			{#if form?.dagFout}<p class="melding fout" style="grid-column: 1 / -1">{form.dagFout}</p>{/if}
 		</form>
-		{#if eiwitDoel}
-			<p class="klein gedempt" style="margin:0">Doel: {eiwitDoel[0]}–{eiwitDoel[1]} g eiwit (1,8–2 g per kg){#if data.onderhoud} · {data.onderhoud + 300}–{data.onderhoud + 500} kcal{/if} · 8+ uur slaap.</p>
-		{/if}
 	</section>
 </main>
 
@@ -162,6 +173,8 @@
 		width: 2.4rem; height: 2.4rem; border-radius: 50%; display: grid; place-items: center;
 		background: var(--vlak-hoog); font-weight: 700; font-size: var(--maat-xs); color: var(--tekst-rustig);
 	}
+	.eten-kaart { display: flex; justify-content: space-between; align-items: center; gap: var(--r-3); text-decoration: none; }
+	.eten-kaart .groot { font-family: var(--letter-display); font-stretch: var(--breed); font-weight: 800; font-size: var(--maat-xl); }
 	.soort { font-size: 0.625rem; color: var(--tekst-gedempt); font-weight: 600; }
 	.gedaan .bol { background: var(--accent); color: var(--op-accent); }
 </style>
