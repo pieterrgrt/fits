@@ -4,7 +4,8 @@ Persoonlijke sportapp: gym is de hoofdzaak, cardio is extra, groei komt uit gym 
 
 - **Vandaag:** de sessie van de dag, starten met één tik, pijlers (gym, eiwit, slaap, cardio) en de dagregel.
 - **Training:** per oefening je vorige sessie en het doel van vandaag (+1 rep per set), sets loggen met een reps-stepper, "hoeveel had je nog over" (RIR), rusttimer (90–120 of 60 sec), uitleg met bewegende figuur, wisselslot kiezen, twee-uursoptie.
-- **Zondag-check:** dubbele progressie als regels. Fits stelt voor wat zwaarder mag, waar een set af moet, wat na 4 weken stilstand vervangen kan, laat je het wisselslot kiezen en de weekregel invullen.
+- **Zonder bereik:** sets die je zonder verbinding logt, bewaart Fits op je telefoon en verstuurt ze vanzelf zodra er bereik is. De trainingspagina opent ook offline (service worker). Tijdens een training blijft het scherm aan; de rusttimer loopt door als je de app wegzet. Vergeten trainingen sluit Fits na 4 uur zelf af.
+- **Zondag-check:** dubbele progressie als regels. Fits stelt voor wat zwaarder mag, waar een set af moet, wat na 4 weken stilstand vervangen kan, laat je het wisselslot kiezen, toont sets per spiergroep (doel 10–20 per week) en laat je de weekregel invullen.
 - **Schema:** Push/Pull/Legs uit het oorspronkelijke document, met "sinds"-datums. Alles aan te passen.
 - **Oefeningen:** 51 oefeningen met animatie, spierkaart, uitvoering, aandachtspunten en je eigen verloop.
 - **Eten (zoals Lifesum):** dagboek per maaltijd, calorie-ring en macro's (eiwit, koolhydraten, vet) op je doelen uit het schema, zoeken in een basislijst en in Open Food Facts (merkproducten), barcode scannen, porties, favorieten, recent, eigen producten, vaste maaltijden en recepten, "zelfde als gisteren", snel calorieën toevoegen, water en vasten. Zie `docs/eten.md`.

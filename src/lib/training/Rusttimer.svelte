@@ -1,26 +1,57 @@
 <script>
 	// Rusttimer onderin beeld. Start na elke gelogde set; trilt en piept als de rust erop zit.
+	// De tijd telt vanaf de klok, niet per tik: zet je de app even weg of gaat je scherm uit, dan klopt hij
+	// als je terugkomt. Hij overleeft ook herladen (bewaard op de telefoon).
+	import { onMount } from 'svelte';
 	import Icoon from '#lib/Icoon.svelte';
 
 	let { seconden = $bindable(0), totaal = 90, bereik = '', onklaar } = $props();
 	let einde = $state(0);
 	let over = $state(0);
 	let interval;
+	const SLEUTEL = 'fits-rust';
 
 	export function start(s, label) {
 		totaal = s;
 		bereik = label;
 		einde = Date.now() + s * 1000;
+		bewaar();
+		loop();
+	}
+	function loop() {
 		tik();
 		clearInterval(interval);
 		interval = setInterval(tik, 250);
 	}
+	function bewaar() {
+		try {
+			if (einde) localStorage.setItem(SLEUTEL, JSON.stringify({ einde, totaal, bereik }));
+			else localStorage.removeItem(SLEUTEL);
+		} catch {}
+	}
+	onMount(() => {
+		try {
+			const r = JSON.parse(localStorage.getItem(SLEUTEL) ?? 'null');
+			if (r && r.einde > Date.now()) {
+				({ einde, totaal, bereik } = r);
+				loop();
+			}
+		} catch {}
+		const terug = () => document.visibilityState === 'visible' && einde && tik();
+		document.addEventListener('visibilitychange', terug);
+		return () => {
+			document.removeEventListener('visibilitychange', terug);
+			clearInterval(interval);
+		};
+	});
 	function tik() {
 		over = Math.max(0, Math.ceil((einde - Date.now()) / 1000));
 		seconden = over;
 		if (over === 0 && interval) {
 			clearInterval(interval);
 			interval = null;
+			einde = 0;
+			bewaar();
 			signaal();
 			onklaar?.();
 		}
@@ -43,12 +74,14 @@
 		clearInterval(interval);
 		interval = null;
 		einde = 0;
+		bewaar();
 		over = 0;
 		seconden = 0;
 	};
 	const erbij = (s) => {
 		einde += s * 1000;
 		totaal += s;
+		bewaar();
 		tik();
 	};
 	const mm = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;

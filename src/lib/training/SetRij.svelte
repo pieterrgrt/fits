@@ -4,17 +4,32 @@
 	import { enhance } from '$app/forms';
 	import Icoon from '#lib/Icoon.svelte';
 	import { getal } from '#lib/gewicht.js';
+	import { wachtrij } from './wachtrij.svelte.js';
 
-	let { item, nr, gedaan = null, doelReps, standaardGewicht, sec = false, onopgeslagen } = $props();
+	let { training, item, nr, gedaan = null, doelReps, standaardGewicht, sec = false, onopgeslagen } = $props();
 
 	// Beginwaarden; daarna houdt de rij zijn eigen invoer bij (de rij wordt opnieuw gemaakt als de set verandert).
-	const b = untrack(() => ({ g: gedaan?.gewicht ?? standaardGewicht ?? '', r: gedaan?.reps ?? doelReps ?? item.reps_min, i: gedaan?.rir ?? '' }));
+	// Een set die nog op de telefoon wacht, telt als gedaan.
+	const wacht = $derived(wachtrij.voor(training, item.id, nr));
+	const b = untrack(() => {
+		const w = wachtrij.voor(training, item.id, nr);
+		const g = w ? { gewicht: w.gewicht, reps: Number(w.reps), rir: w.rir === '' ? '' : Number(w.rir) } : gedaan;
+		// Gewicht met een komma tonen (52,5); de server leest komma en punt.
+		const gw = g?.gewicht ?? standaardGewicht ?? '';
+		return { g: gw === '' || gw == null ? '' : String(gw).replace('.', ','), r: g?.reps ?? doelReps ?? item.reps_min, i: g?.rir ?? '' };
+	});
 	let gewicht = $state(b.g);
 	let reps = $state(b.r);
 	let rir = $state(b.i);
 	let bezig = $state(false);
 	let fout = $state('');
-	const klaar = $derived(!!gedaan);
+	const klaar = $derived(!!gedaan || !!wacht);
+	const opTelefoon = (cancel) => {
+		wachtrij.bewaar({ training, item: item.id, nr, gewicht: String(gewicht ?? ''), reps: String(reps), rir: String(rir ?? '') });
+		cancel?.();
+		bezig = false;
+		onopgeslagen?.();
+	};
 	const bijstellen = (n) => (reps = Math.max(0, Number(reps || 0) + n));
 </script>
 
@@ -23,12 +38,15 @@
 	action="?/set"
 	class="set"
 	class:klaar
-	use:enhance={() => {
-		bezig = true;
+	use:enhance={({ cancel }) => {
 		fout = '';
+		// Geen bereik: meteen op de telefoon bewaren, dan kun je door.
+		if (!navigator.onLine) return opTelefoon(cancel);
+		bezig = true;
 		return async ({ result, update }) => {
 			bezig = false;
-			if (result.type === 'failure') fout = result.data?.fout ?? 'Niet opgeslagen';
+			if (result.type === 'error') opTelefoon();
+			else if (result.type === 'failure') fout = result.data?.fout ?? 'Niet opgeslagen';
 			else {
 				await update({ reset: false });
 				onopgeslagen?.();
@@ -58,6 +76,7 @@
 		{#each [0, 1, 2] as r}
 			<button type="button" class="chip" aria-pressed={rir === r} onclick={() => (rir = rir === r ? '' : r)}>{r === 2 ? '2+' : r}</button>
 		{/each}
+		{#if wacht}<span class="klein wacht" title="Wordt verstuurd zodra er bereik is">op telefoon</span>{/if}
 		{#if doelReps}<span class="klein gedempt doel">doel {doelReps}{sec ? ' s' : ''}</span>{/if}
 	</div>
 	{#if fout}<p class="melding fout" style="grid-column: 1 / -1; margin: 0">{fout}</p>{/if}
@@ -81,6 +100,7 @@
 	.rir { grid-column: 2 / -1; display: flex; gap: var(--r-1); align-items: center; flex-wrap: wrap; }
 	.rir .chip { height: 1.5rem; padding: 0 0.55rem; font-size: var(--maat-xs); }
 	.doel { margin-left: auto; }
+	.wacht { color: var(--amber); font-weight: 600; }
 	.set .stepper { grid-template-columns: 2.1rem minmax(2rem, 1fr) 2.1rem; }
 	.set .stepper input { font-stretch: 100%; font-size: 1.3rem; padding: 0; }
 	.klaar .stepper { border-color: color-mix(in srgb, var(--accent) 40%, var(--lijn)); }

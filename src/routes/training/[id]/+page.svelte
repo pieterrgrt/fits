@@ -1,6 +1,8 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
+	import { wachtrij } from '#lib/training/wachtrij.svelte.js';
 	import Icoon from '#lib/Icoon.svelte';
 	import Figuur from '#lib/figuur/Figuur.svelte';
 	import SetRij from '#lib/training/SetRij.svelte';
@@ -15,6 +17,7 @@
 	let open = $state(null); // id van het uitgeklapte item
 	let uitleg = $state({}); // item-id → animatie tonen
 	let vervang = $state(null); // item dat je aan het vervangen bent
+	let afrondFout = $state('');
 	let verstreken = $state('0:00');
 
 	const items = $derived(data.items.map((it) => ({ ...it, oef: it.slug ? oefening(it.slug) : null })));
@@ -23,6 +26,26 @@
 	const totaalSets = $derived(items.reduce((a, it) => a + it.gedaan.length, 0));
 	$effect(() => {
 		if (open == null && volgende) open = volgende.id;
+	});
+
+	// Sets die zonder bereik op de telefoon zijn bewaard, gaan vanzelf naar de server.
+	const wachtend = $derived(wachtrij.aantal(data.training.id));
+	onMount(() => wachtrij.start(() => invalidateAll()));
+
+	// Scherm aan houden tijdens de training (waar de telefoon dat toestaat).
+	onMount(() => {
+		let slot = null;
+		const vraag = async () => {
+			try {
+				if (document.visibilityState === 'visible') slot = await navigator.wakeLock?.request('screen');
+			} catch {}
+		};
+		vraag();
+		document.addEventListener('visibilitychange', vraag);
+		return () => {
+			document.removeEventListener('visibilitychange', vraag);
+			slot?.release().catch(() => {});
+		};
 	});
 
 	onMount(() => {
@@ -60,6 +83,10 @@
 
 <main class="app stapel">
 	{#if form?.fout}<p class="melding fout">{form.fout}</p>{/if}
+	{#if wachtend}
+		<p class="melding amber">{wachtend} {wachtend === 1 ? 'set staat' : 'sets staan'} op je telefoon en {wachtend === 1 ? 'gaat' : 'gaan'} naar de server zodra je bereik hebt.{#if wachtrij.bezig} Bezig…{/if}</p>
+	{/if}
+	{#if wachtrij.fout}<p class="melding fout">{wachtrij.fout}</p>{/if}
 
 	{#if data.dag?.warmup}
 		<details class="kaart warmup">
@@ -153,6 +180,7 @@
 						<div>
 							{#each Array.from({ length: Math.max(sets, it.gedaan.length) }, (_, i) => i + 1) as nr (nr + '-' + (it.gedaan.find((s) => s.nr === nr)?.id ?? 'x'))}
 								<SetRij
+									training={data.training.id}
 									item={it}
 									{nr}
 									{sec}
@@ -175,7 +203,14 @@
 
 	<section class="kaart stapel">
 		<h2>Afronden</h2>
-		<form method="POST" action="?/afronden" class="stapel">
+		<form method="POST" action="?/afronden" class="stapel" onsubmit={(e) => {
+			if (wachtend || !navigator.onLine) {
+				e.preventDefault();
+				afrondFout = 'Wacht tot je bereik hebt: eerst moeten je sets naar de server. Daarna kun je afronden.';
+				wachtrij.verstuur();
+			}
+		}}>
+			{#if afrondFout}<p class="melding amber" style="margin:0">{afrondFout}</p>{/if}
 			<label class="veld"><span>Notitie</span><textarea name="notitie" placeholder="Bv. bench bovenkant gehaald → zondag naar 52,5"></textarea></label>
 			<fieldset class="stapel krap tweeuur">
 				<legend class="label">Twee-uursoptie (na de gym)</legend>

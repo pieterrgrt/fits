@@ -2,6 +2,8 @@ import { fail } from '@sveltejs/kit';
 import { doe } from '#lib/server/db.js';
 import * as data from '#lib/server/data.js';
 import { oefening, PER_SLUG } from '#lib/oefeningen.js';
+import { alle } from '#lib/server/db.js';
+import { volume } from '#lib/volume.js';
 import { vandaag, maandag, plusDagen } from '#lib/datum.js';
 
 export const load = ({ locals }) => {
@@ -14,6 +16,16 @@ export const load = ({ locals }) => {
 		datum: d,
 		week,
 		volgendeWeek: plusDagen(maandag(d), 7),
+		volume: {
+			gedaan: volume(
+				alle(
+					`SELECT s.slug, s.reps FROM sets s JOIN trainingen t ON t.id = s.training_id
+					 WHERE t.gebruiker_id = ? AND t.datum BETWEEN ? AND ?`,
+					g, week.maandag, week.zondag
+				)
+			),
+			gepland: volume(dagen.flatMap((dag) => dag.items.filter((it) => it.slug).map((it) => ({ slug: it.slug, aantal: it.sets_tijdelijk ?? it.sets }))))
+		},
 		dagen: dagen.map((dag) => ({
 			id: dag.id,
 			weekdag: dag.weekdag,

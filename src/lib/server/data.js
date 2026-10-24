@@ -54,8 +54,25 @@ export const doelVoor = (gebruikerId, it, behalve) => doelVandaag(it, geschieden
 
 /* ---------- Trainingen ---------- */
 
-export const openTraining = (gebruikerId) =>
-	een('SELECT * FROM trainingen WHERE gebruiker_id = ? AND eind IS NULL ORDER BY id DESC LIMIT 1', gebruikerId);
+/**
+ * Trainingen die je vergat af te ronden: na 4 uur sluit Fits ze. Met sets: afgerond op het moment van
+ * de laatste set. Zonder sets: weg.
+ */
+export function sluitVergeten(gebruikerId) {
+	transactie(() => {
+		const oud = alle("SELECT id FROM trainingen WHERE gebruiker_id = ? AND eind IS NULL AND begin < datetime('now', '-4 hours')", gebruikerId);
+		for (const { id } of oud) {
+			const laatste = een('SELECT max(gemaakt) AS t FROM sets WHERE training_id = ?', id).t;
+			if (laatste) doe("UPDATE trainingen SET eind = ?, notitie = coalesce(notitie, 'Automatisch afgerond') WHERE id = ?", laatste, id);
+			else doe('DELETE FROM trainingen WHERE id = ?', id);
+		}
+	});
+}
+
+export function openTraining(gebruikerId) {
+	sluitVergeten(gebruikerId);
+	return een('SELECT * FROM trainingen WHERE gebruiker_id = ? AND eind IS NULL ORDER BY id DESC LIMIT 1', gebruikerId);
+}
 
 export const training = (gebruikerId, id) => een('SELECT * FROM trainingen WHERE id = ? AND gebruiker_id = ?', id, gebruikerId);
 

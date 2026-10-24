@@ -4,7 +4,8 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      ORIGIN: https://fits.alduslab.eu
+      # Achter nginx: het adres zoals de browser het ziet (https), voor de beveiliging van formulieren.
+      PROTOCOL_HEADER: x-forwarded-proto
     volumes:
       - fits-data:/data
     # Alleen bereikbaar op de server zelf; de nginx van de server stuurt fits.alduslab.eu hierheen.

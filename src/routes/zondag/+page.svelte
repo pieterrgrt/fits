@@ -5,6 +5,7 @@
 	import { oefening } from '#lib/oefeningen.js';
 	import Figuur from '#lib/figuur/Figuur.svelte';
 	import Icoon from '#lib/Icoon.svelte';
+	import Volume from '#lib/Volume.svelte';
 
 	let { data, form } = $props();
 	const bewaar = () => async ({ update }) => update({ reset: false });
@@ -110,9 +111,16 @@
 		{/each}
 	</section>
 
+	<!-- volume -->
+	<section class="stapel">
+		<div class="rij"><span class="stap">3</span><h2>Sets per spiergroep</h2></div>
+		<p class="rustig" style="margin:0">Groeit een spiergroep niet en zit hij onder de 10? Geef hem in het wisselslot of met een extra set wat meer.</p>
+		<div class="kaart"><Volume gedaan={data.volume.gedaan} gepland={data.volume.gepland} /></div>
+	</section>
+
 	<!-- 5: weekregel -->
 	<section class="stapel">
-		<div class="rij"><span class="stap">3</span><h2>Weekregel</h2></div>
+		<div class="rij"><span class="stap">4</span><h2>Weekregel</h2></div>
 		<form method="POST" action="?/weekregel" class="kaart raster twee" use:enhance={bewaar}>
 			<label class="veld"><span>Slaap gem. (uur)</span><input name="slaap" inputmode="decimal" value={wr.slaap ?? (slaapGem ? getal(Math.round(slaapGem * 10) / 10) : '')} placeholder="8" /></label>
 			<label class="veld"><span>Energie (1–10)</span><input name="energie" inputmode="numeric" value={wr.energie ?? ''} placeholder="7" /></label>

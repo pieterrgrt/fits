@@ -1,5 +1,8 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
+	// Op de inlogpagina: geen bewaarde pagina's van een vorige sessie laten staan.
+	onMount(() => navigator.serviceWorker?.controller?.postMessage('uitgelogd'));
 	import Beeldmerk from '#lib/Beeldmerk.svelte';
 	let { form } = $props();
 	let bezig = $state(false);

@@ -4,6 +4,7 @@ import * as data from '#lib/server/data.js';
 import { PER_SLUG } from '#lib/oefeningen.js';
 
 const laad = (locals, id) => {
+	data.sluitVergeten(locals.gebruiker.id);
 	const t = data.training(locals.gebruiker.id, Number(id));
 	if (!t) error(404, 'Deze training bestaat niet.');
 	return t;

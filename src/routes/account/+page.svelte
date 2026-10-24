@@ -95,7 +95,7 @@
 		</details>
 	</section>
 
-	<form method="POST" action="/uitloggen"><button class="knop omlijnd vol-breed"><Icoon naam="uit" grootte={18} /> Uitloggen</button></form>
+	<form method="POST" action="/uitloggen" onsubmit={() => navigator.serviceWorker?.controller?.postMessage('uitgelogd')}><button class="knop omlijnd vol-breed"><Icoon naam="uit" grootte={18} /> Uitloggen</button></form>
 </main>
 
 <style>
