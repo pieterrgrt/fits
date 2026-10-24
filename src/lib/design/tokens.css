@@ -1,0 +1,162 @@
+/*
+  Fits — designsysteem, laag 1: tokens
+  Naam van het systeem: IJzer. Donker als een sportschool om zes uur 's ochtends,
+  met één felle kleur (Volt) voor alles wat vooruitgang is.
+
+  Vier pijlers, elk een eigen kleur. Groei = gym + eten + slaap; cardio is extra.
+    Volt    #d7ff3a   gym, voortgang, primaire actie
+    Amber   #ffc24a   eten (eiwit, calorieën)
+    Lila    #a99bff   slaap en herstel
+    Koraal  #ff6b4a   cardio (Strava)
+
+  Alle waarden staan ook in design/tokens.json. Wijzig ze op beide plekken.
+*/
+
+:root {
+	color-scheme: dark;
+
+	/* Kleur — basis (donker is de standaard) */
+	--ijzer-0: #08090b;   /* diepste vlak: achter de app */
+	--ijzer-1: #0c0d10;   /* pagina */
+	--ijzer-2: #14161b;   /* kaart */
+	--ijzer-3: #1c1f26;   /* kaart verhoogd, invoer */
+	--ijzer-4: #272b34;   /* lijn, scheiding */
+	--ijzer-5: #3a3f4b;   /* lijn sterk, uitgeschakeld */
+	--krijt-1: #f3f2ec;   /* tekst */
+	--krijt-2: #b4b7bf;   /* tekst rustig */
+	--krijt-3: #7d828d;   /* tekst gedempt, labels */
+
+	/* Kleur — pijlers */
+	--volt: #d7ff3a;
+	--volt-diep: #b6e000;
+	--volt-tint: rgb(215 255 58 / 0.12);
+	--volt-tekst: #d7ff3a;      /* volt als tekstkleur */
+	--op-volt: #0c0d10;         /* tekst op een volt vlak */
+	--amber: #ffc24a;
+	--amber-tint: rgb(255 194 74 / 0.13);
+	--lila: #a99bff;
+	--lila-tint: rgb(169 155 255 / 0.14);
+	--koraal: #ff6b4a;
+	--koraal-tint: rgb(255 107 74 / 0.14);
+
+	/* Kleur — signaal */
+	--goed: #57e39a;
+	--let-op: #ffc24a;
+	--fout: #ff5c6c;
+	--fout-tint: rgb(255 92 108 / 0.14);
+
+	/* Rollen: componenten gebruiken alleen deze */
+	--achtergrond: var(--ijzer-1);
+	--vlak: var(--ijzer-2);
+	--vlak-hoog: var(--ijzer-3);
+	--lijn: var(--ijzer-4);
+	--lijn-sterk: var(--ijzer-5);
+	--tekst: var(--krijt-1);
+	--tekst-rustig: var(--krijt-2);
+	--tekst-gedempt: var(--krijt-3);
+	--accent: var(--volt);
+	--op-accent: var(--op-volt);
+	--accent-tekst: var(--volt-tekst);
+	--accent-tint: var(--volt-tint);
+	--grafiek: var(--volt);     /* volt in figuren, ringen en grafieken */
+	--schaduw: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px -16px rgb(0 0 0 / 0.7);
+
+	/* Letter */
+	--letter-display: 'Archivo Variable', 'Archivo', 'Arial Narrow', system-ui, sans-serif;
+	--letter-tekst: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--smal: 72%;        /* Archivo font-stretch voor koppen */
+	--breed: 118%;      /* Archivo font-stretch voor het woordmerk en grote cijfers */
+
+	--maat-xs: 0.75rem;    /* 12 labels */
+	--maat-s: 0.875rem;    /* 14 hulp, meta */
+	--maat-m: 1rem;        /* 16 tekst */
+	--maat-l: 1.25rem;     /* 20 tussenkop */
+	--maat-xl: 1.75rem;    /* 28 kop */
+	--maat-2xl: 2.5rem;    /* 40 paginakop */
+	--maat-3xl: 3.75rem;   /* 60 groot cijfer */
+	--maat-4xl: 5.5rem;    /* 88 timer */
+
+	/* Ruimte: stappen van 4px */
+	--r-1: 0.25rem;
+	--r-2: 0.5rem;
+	--r-3: 0.75rem;
+	--r-4: 1rem;
+	--r-5: 1.5rem;
+	--r-6: 2rem;
+	--r-7: 3rem;
+	--r-8: 4rem;
+
+	/* Vorm */
+	--hoek-s: 6px;
+	--hoek-m: 12px;
+	--hoek-l: 20px;
+	--hoek-rond: 999px;
+	--rand: 1px;
+
+	/* Beweging */
+	--snel: 120ms;
+	--gewoon: 200ms;
+	--traag: 360ms;
+	--veer: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+	/* Indeling */
+	--breedte-app: 40rem;
+	--breedte-breed: 68rem;
+	--tabbalk: 4.25rem;
+}
+
+@media (prefers-color-scheme: light) {
+	:root:not([data-thema='donker']) {
+		color-scheme: light;
+		--achtergrond: #f4f3ee;
+		--vlak: #ffffff;
+		--vlak-hoog: #eceae3;
+		--lijn: #dedbd1;
+		--lijn-sterk: #c5c1b4;
+		--tekst: #0c0d10;
+		--tekst-rustig: #3d414b;
+		--tekst-gedempt: #6b6f79;
+		--volt-tekst: #4a6600;
+		--grafiek: #93c400;
+		--accent-tekst: var(--volt-tekst);
+		--volt-tint: rgb(150 190 0 / 0.16);
+		--accent-tint: var(--volt-tint);
+		--amber: #b37700;
+		--lila: #5b48d9;
+		--koraal: #d6401f;
+		--goed: #138a50;
+		--fout: #c8243a;
+		--schaduw: 0 1px 2px rgb(12 13 16 / 0.06), 0 10px 30px -18px rgb(12 13 16 / 0.35);
+	}
+}
+
+:root[data-thema='licht'] {
+	color-scheme: light;
+	--achtergrond: #f4f3ee;
+	--vlak: #ffffff;
+	--vlak-hoog: #eceae3;
+	--lijn: #dedbd1;
+	--lijn-sterk: #c5c1b4;
+	--tekst: #0c0d10;
+	--tekst-rustig: #3d414b;
+	--tekst-gedempt: #6b6f79;
+	--volt-tekst: #4a6600;
+	--grafiek: #93c400;
+	--accent-tekst: var(--volt-tekst);
+	--volt-tint: rgb(150 190 0 / 0.16);
+	--accent-tint: var(--volt-tint);
+	--amber: #b37700;
+	--lila: #5b48d9;
+	--koraal: #d6401f;
+	--goed: #138a50;
+	--fout: #c8243a;
+	--schaduw: 0 1px 2px rgb(12 13 16 / 0.06), 0 10px 30px -18px rgb(12 13 16 / 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--snel: 0ms;
+		--gewoon: 0ms;
+		--traag: 0ms;
+	}
+}

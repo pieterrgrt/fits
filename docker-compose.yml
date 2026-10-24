@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ORIGIN: https://fits.alduslab.eu
+    volumes:
+      - fits-data:/data
+    # Alleen bereikbaar op de server zelf; de nginx van de server stuurt fits.alduslab.eu hierheen.
+    ports:
+      - "127.0.0.1:8005:3000"
+
+volumes:
+  # De database staat in een Docker-volume (eigenaar: de node-gebruiker in de container).
+  fits-data:
