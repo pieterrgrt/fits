@@ -66,8 +66,9 @@
 <style>
 	.set {
 		display: grid;
-		grid-template-columns: 1.5rem minmax(0, 6.5rem) minmax(0, 1fr) 2.75rem;
-		gap: var(--r-2);
+		/* nr · gewicht · reps · opslaan. De reps-kolom krijgt de meeste ruimte: "12" moet altijd passen. */
+		grid-template-columns: 1.25rem minmax(4.25rem, 5rem) minmax(5.5rem, 1fr) 2.75rem;
+		gap: 0.375rem;
 		align-items: center;
 		padding: var(--r-2) 0;
 		border-top: 1px solid var(--lijn);
@@ -75,10 +76,12 @@
 	.nr { font-family: var(--letter-display); font-stretch: var(--breed); font-weight: 800; color: var(--tekst-gedempt); text-align: center; }
 	.klaar .nr { color: var(--accent-tekst); }
 	.gewicht { position: relative; display: block; }
-	.gewicht input { padding-right: 2.6rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 650; }
-	.eenheid { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); font-size: var(--maat-xs); color: var(--tekst-gedempt); pointer-events: none; }
+	.gewicht input { padding: 0 2.1rem 0 0.4rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 650; }
+	.eenheid { position: absolute; right: 0.45rem; top: 50%; transform: translateY(-50%); font-size: var(--maat-xs); color: var(--tekst-gedempt); pointer-events: none; }
 	.rir { grid-column: 2 / -1; display: flex; gap: var(--r-1); align-items: center; flex-wrap: wrap; }
 	.rir .chip { height: 1.5rem; padding: 0 0.55rem; font-size: var(--maat-xs); }
 	.doel { margin-left: auto; }
+	.set .stepper { grid-template-columns: 2.1rem minmax(2rem, 1fr) 2.1rem; }
+	.set .stepper input { font-stretch: 100%; font-size: 1.3rem; padding: 0; }
 	.klaar .stepper { border-color: color-mix(in srgb, var(--accent) 40%, var(--lijn)); }
 </style>

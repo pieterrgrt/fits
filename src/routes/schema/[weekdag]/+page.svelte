@@ -49,7 +49,7 @@
 						<label class="veld"><span>tot</span><input name="reps_max" inputmode="numeric" value={it.reps_max} /></label>
 						<label class="veld"><span>Gewicht</span><input name="gewicht" inputmode="decimal" value={it.gewicht ?? ''} placeholder="zoek" /></label>
 						<label class="veld"><span>Eenheid</span><select name="eenheid"><option value="kg" selected={it.eenheid === 'kg'}>kg</option><option value="lbs" selected={it.eenheid === 'lbs'}>lbs</option></select></label>
-						<label class="veld"><span>Sinds</span><input name="sinds" type="date" value={it.sinds ?? ''} /></label>
+						<label class="veld"><span>Sinds</span><input name="sinds" type="date" value={it.sinds ?? ''} /><small>Wordt vandaag als je het gewicht wijzigt</small></label>
 						<label class="vinkje" style="grid-column: 1 / -1"><input type="checkbox" name="per_stuk" checked={it.per_stuk} /> Dumbbells: gewicht per stuk (2×)</label>
 						<label class="veld" style="grid-column: 1 / -1"><span>Notitie</span><input name="notitie" value={it.notitie ?? ''} /></label>
 						<button class="knop primair" style="grid-column: 1 / -1">{form?.ok === it.id ? 'Opgeslagen ✓' : 'Opslaan'}</button>

@@ -58,7 +58,9 @@ export const actions = {
 		};
 		if (Object.values(w).includes(undefined) || w.sets == null || w.min == null || w.max == null || w.max < w.min)
 			return fail(400, { fout: 'Controleer sets, reps en gewicht.', id: it.id });
-		const sinds = /^\d{4}-\d{2}-\d{2}$/.test(String(f.get('sinds'))) ? String(f.get('sinds')) : null;
+		let sinds = /^\d{4}-\d{2}-\d{2}$/.test(String(f.get('sinds'))) ? String(f.get('sinds')) : null;
+		// Ander gewicht = vanaf vandaag op dit gewicht. Alleen als je "sinds" niet zelf ook hebt veranderd.
+		if (w.gewicht !== it.gewicht && sinds === it.sinds) sinds = w.gewicht == null ? null : vandaag();
 		const eenheid = f.get('eenheid') === 'lbs' ? 'lbs' : 'kg';
 		transactie(() => {
 			doe(
