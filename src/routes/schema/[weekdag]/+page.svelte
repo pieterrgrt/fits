@@ -1,4 +1,5 @@
 <script>
+	import { untrack, tick } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { DAGEN, mooi, hoeLang } from '#lib/datum.js';
 	import { gewichtTekst } from '#lib/gewicht.js';
@@ -13,6 +14,91 @@
 	const bewaar = () => async ({ update }) => update({ reset: false });
 	let open = $state(null); // id van de oefening waarvan gewicht/sets/reps open staan
 	let vervang = $state(null); // de oefening die je aan het vervangen bent
+
+	/* ---------- Slepen ---------- */
+	// Pak een oefening bij het handvat (vinger of muis) en sleep hem naar een andere plek.
+	let lijst = $state([]);
+	let sleep = $state(null); // { id, grijp, y }: de oefening die je nu sleept
+	// Volgt de server, behalve tijdens het slepen (dan is de lijst van jou).
+	$effect.pre(() => {
+		const items = data.dag.items;
+		if (!untrack(() => sleep)) lijst = [...items];
+	});
+	const kaarten = {};
+	let lijstEl;
+	let volgordeForm;
+	let idsVeld = $state('');
+	let scrollLus = 0;
+
+	function pak(e, id) {
+		if (e.button !== undefined && e.button !== 0) return;
+		e.preventDefault();
+		const kaart = kaarten[id].getBoundingClientRect();
+		const top = lijstEl.getBoundingClientRect().top;
+		const ruimte = kaart.height + parseFloat(getComputedStyle(lijstEl).rowGap || '0');
+		// Midden van elke andere kaart zoals de lijst zou zijn zonder de gesleepte kaart (ten opzichte van de lijst).
+		const middens = lijst
+			.filter((x) => x.id !== id)
+			.map((x) => {
+				const r = kaarten[x.id].getBoundingClientRect();
+				return r.top - top - (r.top > kaart.top ? ruimte : 0) + r.height / 2;
+			});
+		sleep = { id, grijp: e.clientY - kaart.top, hoogte: kaart.height, middens, y: e.clientY, beginVolgorde: lijst.map((x) => x.id).join(',') };
+		// Op de hele pagina luisteren: als de kaart in de lijst verhuist, raakt het handvat de vinger kwijt.
+		addEventListener('pointermove', beweeg);
+		addEventListener('pointerup', los);
+		addEventListener('pointercancel', los);
+		navigator.vibrate?.(15);
+		scrollLus = requestAnimationFrame(autoScroll);
+	}
+	function beweeg(e) {
+		if (!sleep) return;
+		sleep.y = e.clientY;
+		herschik();
+	}
+	function herschik() {
+		// Nieuwe plek: hoeveel andere kaarten liggen (in de lijst zonder de gesleepte) boven het midden van de gesleepte kaart?
+		const midden = sleep.y - sleep.grijp + sleep.hoogte / 2 - lijstEl.getBoundingClientRect().top;
+		const plek = sleep.middens.filter((m) => m < midden).length;
+		const anderen = lijst.filter((x) => x.id !== sleep.id);
+		const gesleept = lijst.find((x) => x.id === sleep.id);
+		const nieuw = [...anderen.slice(0, plek), gesleept, ...anderen.slice(plek)];
+		if (nieuw.some((x, i) => x.id !== lijst[i].id)) lijst = nieuw;
+	}
+	function autoScroll() {
+		if (!sleep) return;
+		const rand = 80;
+		const v = sleep.y < rand ? -(rand - sleep.y) / 6 : sleep.y > innerHeight - rand - 70 ? (sleep.y - (innerHeight - rand - 70)) / 6 : 0;
+		if (v) {
+			scrollBy(0, v);
+			herschik();
+		}
+		scrollLus = requestAnimationFrame(autoScroll);
+	}
+	function los() {
+		removeEventListener('pointermove', beweeg);
+		removeEventListener('pointerup', los);
+		removeEventListener('pointercancel', los);
+		if (!sleep) return;
+		cancelAnimationFrame(scrollLus);
+		const ids = lijst.map((x) => x.id).join(',');
+		const veranderd = ids !== sleep.beginVolgorde;
+		sleep = null;
+		if (veranderd) {
+			idsVeld = ids;
+			tick().then(() => volgordeForm.requestSubmit());
+		}
+	}
+	// De gesleepte kaart volgt de vinger. Na het bijwerken van de lijst (zijn plek kan veranderd zijn) rekenen we opnieuw.
+	$effect(() => {
+		if (!sleep) return;
+		const y = sleep.y;
+		lijst; // opnieuw na elke verschuiving in de lijst
+		const el = kaarten[sleep.id];
+		const dy = y - sleep.grijp - (lijstEl.getBoundingClientRect().top + el.offsetTop);
+		el.style.transform = `translateY(${dy}px) scale(1.02)`;
+		return () => (el.style.transform = '');
+	});
 </script>
 
 <main class="app stapel">
@@ -25,10 +111,19 @@
 	</header>
 	{#if form?.fout}<p class="melding fout">{form.fout}</p>{/if}
 
-	{#each d.items as it, n (it.id)}
+	<form method="POST" action="?/volgorde" bind:this={volgordeForm} use:enhance={bewaar} hidden>
+		<input type="hidden" name="ids" value={idsVeld} />
+	</form>
+
+	<div class="lijst-items" bind:this={lijstEl} class:sleept={!!sleep}>
+	{#each lijst as it, n (it.id)}
 		{@const o = it.slug ? oefening(it.slug) : null}
-		<article class="kaart item" class:wissel={it.wissel}>
+		<article class="kaart item" class:wissel={it.wissel} class:gesleept={sleep?.id === it.id} bind:this={kaarten[it.id]}>
 			<div class="kopregel">
+				<button class="greep" aria-label="{o?.naam ?? 'Wisselslot'} verslepen" title="Sleep om te verplaatsen"
+					onpointerdown={(e) => pak(e, it.id)}>
+					<Icoon naam="greep" grootte={22} />
+				</button>
 				{#if o}<div class="mini"><Figuur anim={o.anim} klein speelt={false} label={o.naam} /></div>{:else}<div class="mini leeg-mini"><Icoon naam="wissel" /></div>{/if}
 				<div class="stapel krap" style="gap: 2px; min-width: 0">
 					<span class="label">{it.wissel ? 'Wisselslot' : `Oefening ${n + 1}`}{o ? ` · ${groepVan(o.slug)}` : ''}</span>
@@ -38,7 +133,7 @@
 				</div>
 				<div class="pijlen">
 					<form method="POST" action="?/schuif" use:enhance={bewaar}><input type="hidden" name="id" value={it.id} /><input type="hidden" name="richting" value="op" /><button class="knop stil vierkant" disabled={n === 0} aria-label="{o?.naam ?? 'Wisselslot'} omhoog"><Icoon naam="omhoog" grootte={20} /></button></form>
-					<form method="POST" action="?/schuif" use:enhance={bewaar}><input type="hidden" name="id" value={it.id} /><input type="hidden" name="richting" value="af" /><button class="knop stil vierkant omlaag" disabled={n === d.items.length - 1} aria-label="{o?.naam ?? 'Wisselslot'} omlaag"><Icoon naam="omhoog" grootte={20} /></button></form>
+					<form method="POST" action="?/schuif" use:enhance={bewaar}><input type="hidden" name="id" value={it.id} /><input type="hidden" name="richting" value="af" /><button class="knop stil vierkant omlaag" disabled={n === lijst.length - 1} aria-label="{o?.naam ?? 'Wisselslot'} omlaag"><Icoon naam="omhoog" grootte={20} /></button></form>
 				</div>
 			</div>
 
@@ -102,6 +197,7 @@
 			{/if}
 		</article>
 	{/each}
+	</div>
 
 	{#if vervang}
 		<VervangKeuze slug={vervang.slug} actie="?/wissel" velden={{ id: vervang.id }} sluit={() => (vervang = null)} />
@@ -130,7 +226,26 @@
 <style>
 	.item { display: flex; flex-direction: column; gap: var(--r-3); }
 	.item.wissel { border-style: dashed; }
-	.kopregel { display: grid; grid-template-columns: auto 1fr auto; gap: var(--r-3); align-items: center; }
+	.kopregel { display: grid; grid-template-columns: auto auto 1fr auto; gap: var(--r-3); align-items: center; }
+	.lijst-items { display: flex; flex-direction: column; gap: var(--r-4); position: relative; }
+	.greep {
+		all: unset;
+		box-sizing: border-box;
+		display: grid;
+		place-items: center;
+		width: 1.75rem;
+		height: 3rem;
+		margin-left: calc(-1 * var(--r-2));
+		color: var(--tekst-gedempt);
+		cursor: grab;
+		touch-action: none;
+		border-radius: var(--hoek-s);
+	}
+	.greep:hover { color: var(--tekst); }
+	.greep:focus-visible { outline: 2px solid var(--accent); }
+	.sleept, .sleept * { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+	.item.gesleept { position: relative; z-index: 5; border-color: var(--accent); box-shadow: 0 24px 48px -16px rgb(0 0 0 / 0.6); transition: none; }
+	.sleept .item:not(.gesleept) { transition: transform var(--gewoon) var(--veer); }
 	.pijlen { display: flex; flex-direction: column; gap: var(--r-1); }
 	.pijlen .knop { width: 2.5rem; min-height: 2.5rem; }
 	.omlaag :global(svg) { transform: rotate(180deg); }

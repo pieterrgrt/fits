@@ -90,6 +90,16 @@ export const actions = {
 		doe('UPDATE items SET opties = ?, wissel = 1 WHERE id = ?', JSON.stringify(opties), it.id);
 		return { ok: it.id };
 	},
+	volgorde: async ({ request, locals, params }) => {
+		// Nieuwe volgorde na slepen: alle ids van deze dag, in de nieuwe volgorde.
+		const d = laadDag(locals, params.weekdag);
+		const f = await request.formData();
+		const ids = String(f.get('ids') ?? '').split(',').map(Number);
+		const eigen = new Set(d.items.map((x) => x.id));
+		if (ids.length !== eigen.size || !ids.every((id) => eigen.has(id))) return fail(400, { fout: 'Volgorde klopt niet; laad de pagina opnieuw.' });
+		transactie(() => ids.forEach((id, i) => doe('UPDATE items SET positie = ? WHERE id = ?', i + 1, id)));
+		return { ok: true };
+	},
 	schuif: async ({ request, locals, params }) => {
 		const d = laadDag(locals, params.weekdag);
 		const f = await request.formData();
