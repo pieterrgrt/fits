@@ -5,7 +5,7 @@
 		{ href: '/zondag', icoon: 'zondag', naam: 'Zondag-check', uitleg: 'Gewichten bijstellen, wisselslot, weekregel' },
 		{ href: '/doelen', icoon: 'doel', naam: 'Doelen', uitleg: 'Je doelen voor de komende maanden' },
 		{ href: '/voeding', icoon: 'eten', naam: 'Eten en slaap', uitleg: 'Eiwit, calorieën en slaap' },
-		{ href: '/cardio', icoon: 'cardio', naam: 'Cardio', uitleg: 'Strava, zwemmen en zone 2' },
+		{ href: '/cardio', icoon: 'cardio', naam: 'Cardio', uitleg: 'Hardlopen, zwemmen, zone 2' },
 		{ href: '/uitleg', icoon: 'uitleg', naam: 'Hoe het werkt', uitleg: 'Dubbele progressie, rust, RIR' },
 		{ href: '/account', icoon: 'account', naam: 'Account', uitleg: 'Wachtwoord, apparaten, Strava, export' },
 		{ href: '/ontwerp', icoon: 'info', naam: 'Designsysteem', uitleg: 'Logo, kleuren, letters en onderdelen' }

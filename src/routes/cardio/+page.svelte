@@ -39,8 +39,25 @@
 		</div>
 	</section>
 
+	<details class="kaart toevoegen" open={!data.activiteiten.length || !!form?.fout}>
+		<summary class="rij uiteen"><strong>Cardio toevoegen</strong><Icoon naam="plus" grootte={18} /></summary>
+		<form method="POST" action="?/nieuw" class="raster twee" use:enhance>
+			<label class="veld"><span>Wat</span>
+				<select name="soort">
+					{#each ['Run', 'Swim', 'Ride', 'Walk', 'Rowing', 'Workout'] as s}<option value={s}>{NAMEN[s]}</option>{/each}
+				</select>
+			</label>
+			<label class="veld"><span>Datum</span><input name="datum" type="date" value={data.datum} max={data.datum} /></label>
+			<label class="veld"><span>Minuten</span><input name="duur" inputmode="numeric" placeholder="35" required /></label>
+			<label class="veld"><span>Afstand (km)</span><input name="afstand" inputmode="decimal" placeholder="optioneel" /></label>
+			<label class="veld" style="grid-column: 1 / -1"><span>Notitie</span><input name="naam" placeholder="bv. zone 2, 8× 50 m crawl" /></label>
+			{#if form?.fout}<p class="melding fout" style="grid-column: 1 / -1">{form.fout}</p>{/if}
+			<button class="knop primair" style="grid-column: 1 / -1">{form?.toegevoegd ? 'Toegevoegd ✓' : 'Toevoegen'}</button>
+		</form>
+	</details>
+
 	{#if !data.strava.aan}
-		<p class="melding amber">Strava is nog niet ingesteld op de server. Zie <code>docs/strava.md</code>: één keer een Strava API-app aanmaken en twee sleutels invullen.</p>
+		<!-- Strava staat uit: alleen zelf invoeren. -->
 	{:else if !data.strava.gekoppeld}
 		<section class="kaart stapel">
 			<h2>Koppel Strava</h2>
@@ -53,7 +70,6 @@
 			<form method="POST" action="?/sync" use:enhance><button class="knop klein omlijnd"><Icoon naam="sync" grootte={16} /> Bijwerken</button></form>
 		</div>
 		{#if page.url.searchParams.has('gekoppeld')}<p class="melding">Strava is gekoppeld.</p>{/if}
-		{#if form?.fout}<p class="melding fout">{form.fout}</p>{/if}
 		{#if form?.nieuw != null}<p class="melding">{form.nieuw} activiteiten bijgewerkt.</p>{/if}
 	{/if}
 
@@ -61,22 +77,24 @@
 		<section class="stapel krap">
 			<div class="rij uiteen"><span class="label">week van {mooi(week)}</span><span class="chip" class:koraal={lijst.length > 3}>{lijst.length}×</span></div>
 			{#each lijst as a (a.id)}
-				<a class="kaart act" href="https://www.strava.com/activities/{a.id}" target="_blank" rel="noopener">
+				{@const eigen = a.id.startsWith('eigen-')}
+				<svelte:element this={eigen ? 'div' : 'a'} class="kaart act" href={eigen ? undefined : `https://www.strava.com/activities/${a.id}`} target={eigen ? undefined : '_blank'} rel={eigen ? undefined : 'noopener'}>
 					<span class="soort"><Icoon naam="cardio" /></span>
 					<span class="stapel krap" style="gap: 2px; min-width: 0">
-						<strong class="afkappen">{a.naam}</strong>
+						<strong class="afkappen">{a.naam ?? NAMEN[a.soort] ?? a.soort}</strong>
 						<span class="klein gedempt">{mooi(a.datum, { dag: true })} · {NAMEN[a.soort] ?? a.soort}{a.hartslag ? ` · ♥ ${Math.round(a.hartslag)}` : ''}</span>
 						{#if botst(a.datum)}<span class="klein" style="color: var(--amber)">Dag voor of na legs</span>{/if}
 					</span>
 					<span class="stapel krap tnum" style="gap: 2px; text-align: right">
 						<strong>{km(a.afstand) || duur(a.duur)}</strong>
 						<span class="klein gedempt">{km(a.afstand) ? duur(a.duur) : ''} {tempo(a)}</span>
+						{#if eigen}
+							<form method="POST" action="?/weg" use:enhance><input type="hidden" name="id" value={a.id} /><button class="knop klein stil" style="padding: 0; min-height: 0">Verwijderen</button></form>
+						{/if}
 					</span>
-				</a>
+				</svelte:element>
 			{/each}
 		</section>
-	{:else}
-		{#if data.strava.gekoppeld}<p class="leeg">Geen activiteiten in de afgelopen acht weken.</p>{/if}
 	{/each}
 
 	<section class="stapel">
@@ -105,5 +123,7 @@
 	.soort { width: 2.5rem; height: 2.5rem; border-radius: var(--hoek-m); display: grid; place-items: center; background: var(--koraal-tint); color: var(--koraal); }
 	.afkappen { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	.strava { --knop-vlak: var(--koraal); --knop-tekst: #160604; align-self: flex-start; }
+	.toevoegen summary { list-style: none; }
+	.toevoegen form { margin-top: var(--r-4); }
 	.protocol { margin: 0; padding-left: 1.1rem; }
 </style>

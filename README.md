@@ -7,7 +7,7 @@ Persoonlijke sportapp: gym is de hoofdzaak, cardio is extra, groei komt uit gym 
 - **Zondag-check:** dubbele progressie als regels. Fits stelt voor wat zwaarder mag, waar een set af moet, wat na 4 weken stilstand vervangen kan, laat je het wisselslot kiezen en de weekregel invullen.
 - **Schema:** Push/Pull/Legs uit het oorspronkelijke document, met "sinds"-datums. Alles aan te passen.
 - **Oefeningen:** 51 oefeningen met animatie, spierkaart, uitvoering, aandachtspunten en je eigen verloop.
-- **Logboek, doelen, eten en slaap, cardio (Strava).**
+- **Logboek, doelen, eten en slaap, cardio.** Cardio voer je zelf in; Strava koppelen kan, maar hoeft niet.
 - **Accounts:** inloggen, uitnodigingen, apparaten beheren, wachtwoord wijzigen, export, account verwijderen.
 
 ## Op je laptop draaien
@@ -26,7 +26,7 @@ Het eerste account dat je aanmaakt wordt beheerder. Daarna kan alleen iemand met
 
 ## Online
 
-Een Docker-container op de Hetzner-server, achter de nginx van de server, op poort 8005. Een push naar `main` bouwt en test de app en zet hem (als de geheimen zijn ingesteld) online. Stappen, beheer en back-ups: `docs/online-zetten.md`. Strava koppelen: `docs/strava.md`.
+Een Docker-container op de Hetzner-server, achter de nginx van de server, op poort 8005. Een push naar `main` bouwt en test de app en zet hem (als de geheimen zijn ingesteld) online. Stappen, beheer en back-ups: `docs/online-zetten.md`. Strava is optioneel: `docs/strava.md`.
 
 ## Indeling
 

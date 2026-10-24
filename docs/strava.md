@@ -1,4 +1,8 @@
-# Strava koppelen
+# Strava koppelen (optioneel)
+
+Fits werkt ook zonder Strava: op **Cardio** voer je hardlopen, zwemmen of fietsen zelf in, en dat telt net zo mee. Laat je de sleutels hieronder leeg, dan staat Strava uit en zie je het nergens in de app.
+
+Wil je toch koppelen: daarvoor heb je een (gratis) Strava-account nodig; een betaald abonnement is niet nodig.
 
 Fits leest je activiteiten (hardlopen, zwemmen, fietsen) om je cardio per week te tellen en te waarschuwen bij cardio op de dag voor of na legs. Het kan ook een afgeronde gymsessie als *Weight Training* op Strava zetten, met je sets in de beschrijving.
 

@@ -55,12 +55,11 @@
 		</ul>
 	</section>
 
+	{#if data.strava.aan}
 	<section class="kaart stapel">
 		<h3>Strava</h3>
 		{#if page.url.searchParams.get('strava')}<p class="melding fout">{MELDING[page.url.searchParams.get('strava')]}</p>{/if}
-		{#if !data.strava.aan}
-			<p class="klein rustig" style="margin:0">Nog niet ingesteld op deze server (zie docs/strava.md).</p>
-		{:else if data.strava.gekoppeld}
+		{#if data.strava.gekoppeld}
 			<p class="rustig" style="margin:0">Gekoppeld{data.strava.naam ? ` als ${data.strava.naam}` : ''}. {data.strava.schrijven ? 'Fits mag trainingen plaatsen.' : 'Fits leest alleen.'}</p>
 			<div class="rij">
 				{#if !data.strava.schrijven}<a class="knop klein omlijnd" href="/strava/koppel?schrijven=1">Ook trainingen plaatsen</a>{/if}
@@ -70,6 +69,7 @@
 			<a class="knop strava" href="/strava/koppel?schrijven=1">Verbinden met Strava</a>
 		{/if}
 	</section>
+	{/if}
 
 	<section class="kaart stapel">
 		<h3>Je gegevens</h3>
