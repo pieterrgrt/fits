@@ -1,5 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { een, doe } from '#lib/server/db.js';
+import { een, alle, doe } from '#lib/server/db.js';
 import * as data from '#lib/server/data.js';
 import { PER_SLUG } from '#lib/oefeningen.js';
 
@@ -15,18 +15,33 @@ export const load = ({ locals, params }) => {
 	if (t.eind) redirect(303, `/logboek/${t.id}`);
 	const dag = t.dag_id ? data.dag(g.id, t.dag_id, { opId: true }) : null;
 	const sets = data.setsVan(t.id);
-	const items = (dag?.items ?? []).map((it) => {
+	const vandaagAnders = vervangingen(t.id);
+	const items = (dag?.items ?? []).map((schemaItem) => {
+		// Alleen vandaag een andere oefening? Dan rekent alles verder met die oefening.
+		const anders = vandaagAnders.get(schemaItem.id);
+		const it = anders ? { ...schemaItem, ...data.vervanging(g.id, schemaItem, anders), sinds: null, sets_tijdelijk: null, vervangt: schemaItem.slug } : schemaItem;
 		const vorige = it.slug ? data.geschiedenis(g.id, it.slug, { limiet: 1, behalve: t.id })[0] ?? null : null;
 		return {
 			...it,
 			vorige: vorige && { datum: vorige.datum, sets: vorige.sets.map(({ gewicht, reps }) => ({ gewicht, reps })) },
 			doel: it.slug ? data.doelVoor(g.id, it, t.id) : [],
 			advies: it.slug ? data.adviesVoor(g.id, it) : null,
-			gedaan: sets.filter((s) => s.item_id === it.id).map(({ id, nr, gewicht, reps, rir }) => ({ id, nr, gewicht, reps, rir }))
+			gedaan: sets.filter((s) => s.item_id === it.id && s.slug === it.slug).map(({ id, nr, gewicht, reps, rir }) => ({ id, nr, gewicht, reps, rir }))
 		};
 	});
 	return { titel: t.titel, training: t, dag, items };
 };
+
+const vervangingen = (trainingId) =>
+	new Map(alle('SELECT item_id, slug FROM vervangingen WHERE training_id = ?', trainingId).map((r) => [r.item_id, r.slug]));
+
+/** Het item zoals het in deze training geldt: met de vervanging voor vandaag, als die er is. */
+function itemVandaag(locals, t, itemId) {
+	const it = data.item(locals.gebruiker.id, itemId);
+	if (!it || it.dag_id !== t.dag_id) return null;
+	const anders = vervangingen(t.id).get(it.id);
+	return anders ? { ...it, ...data.vervanging(locals.gebruiker.id, it, anders) } : it;
+}
 
 const getal = (v) => (v === '' || v == null ? null : Number(String(v).replace(',', '.')));
 
@@ -34,8 +49,8 @@ export const actions = {
 	set: async ({ request, locals, params }) => {
 		const t = laad(locals, params.id);
 		const f = await request.formData();
-		const it = data.item(locals.gebruiker.id, Number(f.get('item')));
-		if (!it || it.dag_id !== t.dag_id || !it.slug) return fail(400, { fout: 'Onbekende oefening.' });
+		const it = itemVandaag(locals, t, Number(f.get('item')));
+		if (!it?.slug) return fail(400, { fout: 'Onbekende oefening.' });
 		const nr = Number(f.get('nr'));
 		const reps = Number(f.get('reps'));
 		const gewicht = getal(f.get('gewicht'));
@@ -62,8 +77,29 @@ export const actions = {
 		const it = data.item(locals.gebruiker.id, Number(f.get('item')));
 		const slug = String(f.get('slug'));
 		if (!it || !it.wissel || it.dag_id !== t.dag_id || !PER_SLUG[slug]) return fail(400, { fout: 'Kan dat niet kiezen.' });
-		const hint = it.opties.find((o) => o.slug === slug)?.hint ?? null;
-		doe('UPDATE items SET slug = ?, gewicht = NULL, sinds = NULL, notitie = ? WHERE id = ?', slug, hint, it.id);
+		data.vervang(locals.gebruiker.id, it, slug);
+		return { ok: true };
+	},
+	vervang: async ({ request, locals, params }) => {
+		const t = laad(locals, params.id);
+		const f = await request.formData();
+		const it = data.item(locals.gebruiker.id, Number(f.get('id')));
+		const slug = String(f.get('slug'));
+		if (!it || it.dag_id !== t.dag_id || !PER_SLUG[slug]) return fail(400, { fout: 'Kan deze oefening niet vervangen.' });
+		if (f.get('bereik') === 'schema') {
+			data.vervang(locals.gebruiker.id, it, slug);
+			doe('DELETE FROM vervangingen WHERE training_id = ? AND item_id = ?', t.id, it.id);
+		} else if (slug === it.slug) {
+			doe('DELETE FROM vervangingen WHERE training_id = ? AND item_id = ?', t.id, it.id);
+		} else {
+			doe('INSERT INTO vervangingen (training_id, item_id, slug) VALUES (?, ?, ?) ON CONFLICT DO UPDATE SET slug = excluded.slug', t.id, it.id, slug);
+		}
+		return { ok: true };
+	},
+	terug: async ({ request, locals, params }) => {
+		const t = laad(locals, params.id);
+		const f = await request.formData();
+		doe('DELETE FROM vervangingen WHERE training_id = ? AND item_id = ?', t.id, Number(f.get('id')));
 		return { ok: true };
 	},
 	afronden: async ({ request, locals, params }) => {

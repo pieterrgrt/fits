@@ -127,3 +127,38 @@ export function laatsteGewicht(gebruikerId) {
 		een('SELECT gewicht, week AS datum FROM weekregels WHERE gebruiker_id = ? AND gewicht IS NOT NULL ORDER BY week DESC LIMIT 1', gebruikerId)
 	);
 }
+
+/* ---------- Oefening vervangen ---------- */
+
+/**
+ * Wat er op een plek komt als je een oefening vervangt: gewicht van de vorige keer dat je hem deed
+ * (anders zoek gewicht), en een rep-range die bij de soort oefening past.
+ */
+export function vervanging(gebruikerId, it, slug) {
+	const o = oefening(slug);
+	const oud = it.slug ? oefening(it.slug) : null;
+	const vorige = geschiedenis(gebruikerId, slug, { limiet: 1 })[0]?.sets ?? [];
+	const zwaarste = vorige.reduce((a, s) => (s.gewicht != null && (a == null || s.gewicht > a.gewicht) ? s : a), null);
+	let [min, max] = [it.reps_min, it.reps_max];
+	if (!oud || oud.soort !== o.soort || oud.meet !== o.meet) {
+		[min, max] = o.meet === 'sec' ? [45, 45] : o.soort === 'compound' ? [8, 12] : [12, 15];
+	}
+	return {
+		slug,
+		gewicht: zwaarste?.gewicht ?? (o.stap === 'lichaam' || o.stap === 'tijd' ? 0 : null),
+		eenheid: zwaarste?.eenheid ?? (oud?.stap === o.stap ? it.eenheid : 'kg'),
+		per_stuk: zwaarste ? zwaarste.per_stuk : o.stap === 'dumbbell' ? 1 : 0,
+		reps_min: min,
+		reps_max: max,
+		notitie: it.wissel ? (it.opties.find((x) => x.slug === slug)?.hint ?? null) : null
+	};
+}
+
+export function vervang(gebruikerId, it, slug) {
+	const v = vervanging(gebruikerId, it, slug);
+	doe(
+		'UPDATE items SET slug = ?, gewicht = ?, eenheid = ?, per_stuk = ?, reps_min = ?, reps_max = ?, notitie = ?, sinds = NULL, sets_tijdelijk = NULL WHERE id = ?',
+		v.slug, v.gewicht, v.eenheid, v.per_stuk ? 1 : 0, v.reps_min, v.reps_max, v.notitie, it.id
+	);
+	return v;
+}

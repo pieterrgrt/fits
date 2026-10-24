@@ -78,8 +78,9 @@ export const actions = {
 		const it = eigenItem(locals, d, f.get('id'));
 		const slug = String(f.get('slug'));
 		if (!PER_SLUG[slug]) return fail(400, { fout: 'Onbekende oefening.' });
-		doe('UPDATE items SET slug = ?, gewicht = NULL, sinds = NULL, notitie = NULL, sets_tijdelijk = NULL WHERE id = ?', slug, it.id);
-		return { ok: it.id };
+		// Gewicht van de vorige keer dat je deze oefening deed, en een rep-range die bij de oefening past.
+		data.vervang(locals.gebruiker.id, it, slug);
+		return { vervangen: it.id };
 	},
 	opties: async ({ request, locals, params }) => {
 		const d = laadDag(locals, params.weekdag);

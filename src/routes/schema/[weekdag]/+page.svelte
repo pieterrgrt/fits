@@ -5,10 +5,14 @@
 	import { oefening } from '#lib/oefeningen.js';
 	import Figuur from '#lib/figuur/Figuur.svelte';
 	import Icoon from '#lib/Icoon.svelte';
+	import VervangKeuze from '#lib/VervangKeuze.svelte';
+	import { groepVan } from '#lib/alternatieven.js';
 
 	let { data, form } = $props();
 	const d = $derived(data.dag);
 	const bewaar = () => async ({ update }) => update({ reset: false });
+	let open = $state(null); // id van de oefening waarvan gewicht/sets/reps open staan
+	let vervang = $state(null); // de oefening die je aan het vervangen bent
 </script>
 
 <main class="app stapel">
@@ -23,25 +27,62 @@
 
 	{#each d.items as it, n (it.id)}
 		{@const o = it.slug ? oefening(it.slug) : null}
-		<details class="kaart item" open={form?.id === it.id}>
-			<summary>
-				<div class="kopregel">
-					{#if o}<div class="mini"><Figuur anim={o.anim} klein speelt={false} label={o.naam} /></div>{/if}
-					<div class="stapel krap" style="gap: 2px; min-width: 0">
-						<span class="label">{it.wissel ? 'Wisselslot' : `Oefening ${n + 1}`}</span>
-						<strong>{o?.naam ?? 'Nog niets gekozen'}</strong>
-						<span class="klein rustig">{it.sets_tijdelijk ?? it.sets} × {it.reps_min}–{it.reps_max} · {gewichtTekst(it)}</span>
-						{#if it.sinds}<span class="klein gedempt">sinds {mooi(it.sinds)} ({hoeLang(it.sinds)})</span>{:else if it.slug}<span class="klein gedempt">sinds ___</span>{/if}
-					</div>
-					<Icoon naam="bewerk" grootte={18} />
+		<article class="kaart item" class:wissel={it.wissel}>
+			<div class="kopregel">
+				{#if o}<div class="mini"><Figuur anim={o.anim} klein speelt={false} label={o.naam} /></div>{:else}<div class="mini leeg-mini"><Icoon naam="wissel" /></div>{/if}
+				<div class="stapel krap" style="gap: 2px; min-width: 0">
+					<span class="label">{it.wissel ? 'Wisselslot' : `Oefening ${n + 1}`}{o ? ` · ${groepVan(o.slug)}` : ''}</span>
+					<strong>{o?.naam ?? 'Nog niets gekozen'}</strong>
+					<span class="klein rustig">{it.sets_tijdelijk ?? it.sets} × {it.reps_min}–{it.reps_max} · {gewichtTekst(it)}</span>
+					{#if it.sinds}<span class="klein gedempt">sinds {mooi(it.sinds)} ({hoeLang(it.sinds)})</span>{:else if it.slug}<span class="klein gedempt">sinds ___</span>{/if}
 				</div>
-			</summary>
+				<div class="pijlen">
+					<form method="POST" action="?/schuif" use:enhance={bewaar}><input type="hidden" name="id" value={it.id} /><input type="hidden" name="richting" value="op" /><button class="knop stil vierkant" disabled={n === 0} aria-label="{o?.naam ?? 'Wisselslot'} omhoog"><Icoon naam="omhoog" grootte={20} /></button></form>
+					<form method="POST" action="?/schuif" use:enhance={bewaar}><input type="hidden" name="id" value={it.id} /><input type="hidden" name="richting" value="af" /><button class="knop stil vierkant omlaag" disabled={n === d.items.length - 1} aria-label="{o?.naam ?? 'Wisselslot'} omlaag"><Icoon naam="omhoog" grootte={20} /></button></form>
+				</div>
+			</div>
 
-			<div class="stapel bewerk">
-				{#if it.advies && it.advies.soort !== 'doorgaan' && it.advies.soort !== 'kies'}
-					<p class="melding" class:amber={it.advies.soort === 'vervang' || it.advies.soort === 'set-minder'}>{it.advies.tekst}</p>
+			{#if ['zwaarder', 'falen', 'wacht', 'set-minder', 'vervang'].includes(it.advies?.soort)}
+				<p class="melding" class:amber={it.advies.soort === 'vervang' || it.advies.soort === 'set-minder'}>{it.advies.tekst}</p>
+			{/if}
+
+			<div class="rij acties">
+				{#if it.slug && !it.wissel}
+					<button class="knop klein omlijnd" onclick={() => (vervang = it)}><Icoon naam="wissel" grootte={16} /> Vervang</button>
 				{/if}
 				{#if it.slug}
+					<button class="knop klein stil" aria-expanded={open === it.id} onclick={() => (open = open === it.id ? null : it.id)}><Icoon naam="bewerk" grootte={16} /> Gewicht, sets, reps</button>
+				{/if}
+			</div>
+
+			{#if it.wissel}
+				<form method="POST" action="?/wissel" class="stapel krap" use:enhance={bewaar}>
+					<input type="hidden" name="id" value={it.id} />
+					<span class="label">Deze week in het wisselslot</span>
+					<div class="raster twee">
+						{#each it.opties as optie}
+							<button name="slug" value={optie.slug} class="chip" aria-pressed={it.slug === optie.slug} style="justify-content: flex-start; height: auto; padding: 0.5rem 0.75rem; white-space: normal">
+								{oefening(optie.slug)?.naam}{optie.hint ? ` · ${optie.hint}` : ''}
+							</button>
+						{/each}
+					</div>
+				</form>
+				<details class="klein">
+					<summary class="gedempt">Opties van dit wisselslot aanpassen</summary>
+					<form method="POST" action="?/opties" class="stapel krap" style="margin-top: var(--r-2)" use:enhance={bewaar}>
+						<input type="hidden" name="id" value={it.id} />
+						<div class="opties">
+							{#each data.bibliotheek as b}
+								<label class="vinkje"><input type="checkbox" name="optie" value={b.slug} checked={it.opties.some((x) => x.slug === b.slug)} /> {b.naam}</label>
+							{/each}
+						</div>
+						<button class="knop omlijnd klein">Opties opslaan</button>
+					</form>
+				</details>
+			{/if}
+
+			{#if open === it.id || form?.id === it.id}
+				<div class="stapel bewerk">
 					<form method="POST" action="?/item" class="raster drie" use:enhance={bewaar}>
 						<input type="hidden" name="id" value={it.id} />
 						<label class="veld"><span>Sets</span><input name="sets" inputmode="numeric" value={it.sets} /></label>
@@ -54,55 +95,17 @@
 						<label class="veld" style="grid-column: 1 / -1"><span>Notitie</span><input name="notitie" value={it.notitie ?? ''} /></label>
 						<button class="knop primair" style="grid-column: 1 / -1">{form?.ok === it.id ? 'Opgeslagen ✓' : 'Opslaan'}</button>
 					</form>
-				{/if}
-
-				{#if it.wissel}
-					<form method="POST" action="?/wissel" class="stapel krap" use:enhance={bewaar}>
-						<input type="hidden" name="id" value={it.id} />
-						<span class="label">Deze week in het wisselslot</span>
-						<div class="raster twee">
-							{#each it.opties as optie}
-								<button name="slug" value={optie.slug} class="chip" aria-pressed={it.slug === optie.slug} style="justify-content: flex-start; height: auto; padding: 0.5rem 0.75rem; white-space: normal">
-									{oefening(optie.slug)?.naam}{optie.hint ? ` · ${optie.hint}` : ''}
-								</button>
-							{/each}
-						</div>
-					</form>
-					<details class="klein">
-						<summary class="gedempt">Opties van dit wisselslot aanpassen</summary>
-						<form method="POST" action="?/opties" class="stapel krap" style="margin-top: var(--r-2)" use:enhance={bewaar}>
-							<input type="hidden" name="id" value={it.id} />
-							<div class="opties">
-								{#each data.bibliotheek as b}
-									<label class="vinkje"><input type="checkbox" name="optie" value={b.slug} checked={it.opties.some((x) => x.slug === b.slug)} /> {b.naam}</label>
-								{/each}
-							</div>
-							<button class="knop omlijnd klein">Opties opslaan</button>
-						</form>
-					</details>
-				{:else}
-					<details class="klein">
-						<summary class="gedempt">Vervangen door een andere oefening</summary>
-						<form method="POST" action="?/wissel" class="rij" style="margin-top: var(--r-2)" use:enhance={bewaar}>
-							<input type="hidden" name="id" value={it.id} />
-							<select name="slug" class="invoer" style="flex: 1">
-								{#each data.bibliotheek as b}<option value={b.slug} selected={b.slug === it.slug}>{b.naam}</option>{/each}
-							</select>
-							<button class="knop omlijnd">Vervang</button>
-						</form>
-					</details>
-				{/if}
-
-				<div class="rij">
-					<form method="POST" action="?/schuif" use:enhance><input type="hidden" name="id" value={it.id} /><input type="hidden" name="richting" value="op" /><button class="knop klein omlijnd" disabled={n === 0}>Omhoog</button></form>
-					<form method="POST" action="?/schuif" use:enhance><input type="hidden" name="id" value={it.id} /><input type="hidden" name="richting" value="af" /><button class="knop klein omlijnd" disabled={n === d.items.length - 1}>Omlaag</button></form>
 					<form method="POST" action="?/weg" use:enhance onsubmit={(e) => { if (!confirm('Uit het schema halen? Je logboek blijft bewaard.')) e.preventDefault(); }}>
-						<input type="hidden" name="id" value={it.id} /><button class="knop klein gevaar">Weghalen</button>
+						<input type="hidden" name="id" value={it.id} /><button class="knop klein stil" style="color: var(--fout)">Uit het schema halen</button>
 					</form>
 				</div>
-			</div>
-		</details>
+			{/if}
+		</article>
 	{/each}
+
+	{#if vervang}
+		<VervangKeuze slug={vervang.slug} actie="?/wissel" velden={{ id: vervang.id }} sluit={() => (vervang = null)} />
+	{/if}
 
 	<form method="POST" action="?/nieuw" class="kaart rij" use:enhance>
 		<select name="slug" class="invoer" style="flex: 1" aria-label="Oefening toevoegen">
@@ -125,9 +128,15 @@
 </main>
 
 <style>
-	.item summary { list-style: none; }
+	.item { display: flex; flex-direction: column; gap: var(--r-3); }
+	.item.wissel { border-style: dashed; }
 	.kopregel { display: grid; grid-template-columns: auto 1fr auto; gap: var(--r-3); align-items: center; }
+	.pijlen { display: flex; flex-direction: column; gap: var(--r-1); }
+	.pijlen .knop { width: 2.5rem; min-height: 2.5rem; }
+	.omlaag :global(svg) { transform: rotate(180deg); }
+	.leeg-mini { display: grid; place-items: center; aspect-ratio: 4 / 3; color: var(--tekst-gedempt); }
+	.acties:empty { display: none; }
 	.mini { width: 5.5rem; background: var(--vlak-hoog); border-radius: var(--hoek-m); padding: 2px; }
-	.bewerk { margin-top: var(--r-4); padding-top: var(--r-4); border-top: 1px solid var(--lijn); }
+	.bewerk { padding-top: var(--r-4); border-top: 1px solid var(--lijn); }
 	.opties { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: var(--r-1); max-height: 16rem; overflow: auto; }
 </style>

@@ -63,7 +63,7 @@ export const actions = {
 		const it = data.item(locals.gebruiker.id, Number(f.get('item')));
 		const slug = String(f.get('slug'));
 		if (!it || !PER_SLUG[slug]) return fail(400, { fout: 'Kan niet vervangen.' });
-		doe('UPDATE items SET slug = ?, gewicht = NULL, sinds = NULL, notitie = NULL, sets_tijdelijk = NULL WHERE id = ?', slug, it.id);
+		data.vervang(locals.gebruiker.id, it, slug);
 		return { gedaan: it.id };
 	},
 	wissel: async ({ request, locals }) => {
@@ -71,8 +71,7 @@ export const actions = {
 		const it = data.item(locals.gebruiker.id, Number(f.get('item')));
 		const slug = String(f.get('slug'));
 		if (!it?.wissel || !PER_SLUG[slug]) return fail(400, { fout: 'Kan dat niet kiezen.' });
-		const hint = it.opties.find((o) => o.slug === slug)?.hint ?? null;
-		doe('UPDATE items SET slug = ?, gewicht = NULL, sinds = NULL, notitie = ? WHERE id = ?', slug, hint, it.id);
+		data.vervang(locals.gebruiker.id, it, slug);
 		return { gedaan: it.id };
 	},
 	weekregel: async ({ request, locals }) => {

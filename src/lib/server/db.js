@@ -259,6 +259,15 @@ const MIGRATIES = [
 	ALTER TABLE gebruikers ADD COLUMN doel_kcal INTEGER;     -- leeg = onderhoud + 400
 	ALTER TABLE gebruikers ADD COLUMN doel_water INTEGER;    -- ml, leeg = 2500
 	ALTER TABLE gebruikers ADD COLUMN macro TEXT;            -- JSON: { vet: procent kcal }
+	`,
+	// 3: een oefening alleen voor één training vervangen (apparaat bezet)
+	`
+	CREATE TABLE vervangingen (
+		training_id INTEGER NOT NULL REFERENCES trainingen(id) ON DELETE CASCADE,
+		item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+		slug TEXT NOT NULL,
+		PRIMARY KEY (training_id, item_id)
+	);
 	`
 ];
 

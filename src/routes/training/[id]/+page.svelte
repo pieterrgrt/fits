@@ -5,6 +5,7 @@
 	import Figuur from '#lib/figuur/Figuur.svelte';
 	import SetRij from '#lib/training/SetRij.svelte';
 	import Rusttimer from '#lib/training/Rusttimer.svelte';
+	import VervangKeuze from '#lib/VervangKeuze.svelte';
 	import { oefening } from '#lib/oefeningen.js';
 	import { gewichtTekst, repsTekst, getal } from '#lib/gewicht.js';
 	import { mooi } from '#lib/datum.js';
@@ -13,6 +14,7 @@
 	let timer;
 	let open = $state(null); // id van het uitgeklapte item
 	let uitleg = $state({}); // item-id → animatie tonen
+	let vervang = $state(null); // item dat je aan het vervangen bent
 	let verstreken = $state('0:00');
 
 	const items = $derived(data.items.map((it) => ({ ...it, oef: it.slug ? oefening(it.slug) : null })));
@@ -75,7 +77,7 @@
 		</details>
 	{/if}
 
-	{#each items as it, n (it.id)}
+	{#each items as it, n (it.id + (it.slug ?? ""))}
 		{@const sets = it.sets_tijdelijk ?? it.sets}
 		{@const af = it.gedaan.length >= sets}
 		{@const sec = it.oef?.meet === 'sec'}
@@ -120,7 +122,10 @@
 								{/if}
 								<span class="klein"><span class="gedempt">Doel vandaag:</span> <strong class="accent tnum">{it.doel.join('/')}</strong></span>
 							</div>
-							<button class="knop klein omlijnd" onclick={() => (uitleg[it.id] = !uitleg[it.id])}><Icoon naam="uitleg" grootte={16} /> Hoe?</button>
+							<div class="rij" style="gap: var(--r-1); justify-content: flex-end">
+								<button class="knop klein omlijnd" onclick={() => (uitleg[it.id] = !uitleg[it.id])}><Icoon naam="uitleg" grootte={16} /> Hoe?</button>
+								{#if !it.wissel}<button class="knop klein omlijnd" onclick={() => (vervang = it)}><Icoon naam="wissel" grootte={16} /> Vervang</button>{/if}
+							</div>
 						</div>
 
 						{#if uitleg[it.id]}
@@ -135,6 +140,13 @@
 							<p class="melding">Zoek je gewicht: begin licht en bouw per set op tot je in de eerste set ongeveer {it.reps_min} haalt. Zondag zet je dat gewicht vast.</p>
 						{:else if it.advies?.soort === 'zwaarder'}
 							<p class="melding"><span><strong>Klaar voor zwaarder.</strong> Zondag pas je het gewicht aan, niet nu in de gym.</span></p>
+						{/if}
+						{#if it.vervangt}
+							<form method="POST" action="?/terug" class="melding amber rij uiteen" use:enhance>
+								<span>Vandaag in plaats van <strong>{oefening(it.vervangt)?.naam}</strong>. Je schema blijft zoals het was.</span>
+								<input type="hidden" name="id" value={it.id} />
+								<button class="knop klein stil">Terugzetten</button>
+							</form>
 						{/if}
 						{#if it.notitie}<p class="klein gedempt" style="margin:0">{it.notitie}</p>{/if}
 
@@ -181,6 +193,10 @@
 </main>
 
 <Rusttimer bind:this={timer} />
+
+{#if vervang}
+	<VervangKeuze slug={vervang.slug} actie="?/vervang" velden={{ id: vervang.id }} vandaag sluit={() => (vervang = null)} />
+{/if}
 
 <style>
 	.kop {
