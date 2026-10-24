@@ -16,7 +16,7 @@ Neem deze rij over in de tabel van *Website live zetten op Hetzner*. Poorten in 
    dig +short A fits.alduslab.eu @nsany1.infomaniak.com   # moet 178.105.62.224 geven
    ```
 
-2. **Poort controleren** op de server: `sudo ss -tlnp | grep 127.0.0.1:8005`. Bezet? Kies een andere en pas `docker-compose.yml` en stap 5 aan.
+2. **Poort controleren** op de server: `sudo ss -tlnp | grep 127.0.0.1:8005`. Bezet? Zoek een vrije (`sudo ss -tlnp | grep 127.0.0.1`), zet `FITS_POORT=<poort>` in `.env` en gebruik die poort ook in stap 4 en 5.
 
 3. **Code ophalen.**
 

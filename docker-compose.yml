@@ -8,8 +8,9 @@ services:
     volumes:
       - fits-data:/data
     # Alleen bereikbaar op de server zelf; de nginx van de server stuurt fits.alduslab.eu hierheen.
+    # Poort bezet? Zet FITS_POORT=8006 (of een andere) in .env.
     ports:
-      - "127.0.0.1:8005:3000"
+      - "127.0.0.1:${FITS_POORT:-8005}:3000"
 
 volumes:
   # De database staat in een Docker-volume (eigenaar: de node-gebruiker in de container).
