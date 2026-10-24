@@ -3,7 +3,9 @@ import { doe } from '#lib/server/db.js';
 import * as data from '#lib/server/data.js';
 import { oefening, PER_SLUG } from '#lib/oefeningen.js';
 import { alle } from '#lib/server/db.js';
-import { volume } from '#lib/volume.js';
+import { volume, vultAan } from '#lib/volume.js';
+import { lichteWeekAdvies, gewichtsTrend, kcalAdvies } from '#lib/groei.js';
+import { een } from '#lib/server/db.js';
 import { vandaag, maandag, plusDagen } from '#lib/datum.js';
 
 export const load = ({ locals }) => {
@@ -11,11 +13,33 @@ export const load = ({ locals }) => {
 	const d = vandaag();
 	const dagen = data.dagen(g).filter((x) => x.soort === 'gym');
 	const week = data.week(g, d);
+	const gepland = volume(dagen.flatMap((dag) => dag.items.filter((it) => it.slug).map((it) => ({ slug: it.slug, aantal: it.sets_tijdelijk ?? it.sets }))));
+	const items = dagen.flatMap((dag) => dag.items.filter((it) => it.slug)).map((it) => data.adviesVoor(g, it, d));
+	const volgendeWeek = plusDagen(maandag(d), 7);
+	const lichtNu = data.isLichteWeek(g, d);
+	const lichtVolgende = data.isLichteWeek(g, volgendeWeek);
+	const laatsteFoto = een('SELECT max(datum) AS d FROM fotos WHERE gebruiker_id = ?', g).d;
+	const trend = gewichtsTrend(data.wegingen(g, plusDagen(d, -21)), d);
 	return {
 		titel: 'Zondag-check',
 		datum: d,
 		week,
-		volgendeWeek: plusDagen(maandag(d), 7),
+		volgendeWeek,
+		licht: {
+			nu: lichtNu,
+			volgende: lichtVolgende,
+			advies: lichteWeekAdvies({
+				vandaag: d,
+				trainingsweken: alle('SELECT DISTINCT datum FROM trainingen WHERE gebruiker_id = ? AND eind IS NOT NULL AND licht = 0', g)
+					.map((r) => maandag(r.datum))
+					.filter((w, i, l) => l.indexOf(w) === i),
+				laatsteLicht: data.laatsteLichteWeek(g),
+				weekregels: alle('SELECT energie FROM weekregels WHERE gebruiker_id = ? ORDER BY week DESC LIMIT 2', g),
+				vastgelopen: items.filter((a) => a.soort === 'set-minder' || a.soort === 'vervang').length
+			})
+		},
+		laatsteFoto,
+		trend: trend && { ...trend, advies: kcalAdvies(trend) },
 		volume: {
 			gedaan: volume(
 				alle(
@@ -24,7 +48,7 @@ export const load = ({ locals }) => {
 					g, week.maandag, week.zondag
 				)
 			),
-			gepland: volume(dagen.flatMap((dag) => dag.items.filter((it) => it.slug).map((it) => ({ slug: it.slug, aantal: it.sets_tijdelijk ?? it.sets }))))
+			gepland
 		},
 		dagen: dagen.map((dag) => ({
 			id: dag.id,
@@ -32,6 +56,8 @@ export const load = ({ locals }) => {
 			titel: dag.titel,
 			items: dag.items.map((it) => ({
 				...it,
+				// Wisselslot: welke spiergroepen onder de 10 sets elke optie zou aanvullen.
+				opties: it.opties.map((o) => ({ ...o, vult: vultAan(o.slug, gepland) })).sort((a, b) => b.vult.length - a.vult.length || (a.vult[0]?.sets ?? 99) - (b.vult[0]?.sets ?? 99)),
 				naam: it.slug ? oefening(it.slug).naam : null,
 				advies: data.adviesVoor(g, it, d),
 				laatste: it.slug ? data.geschiedenis(g, it.slug, { limiet: 2 }).map((s) => ({ datum: s.datum, sets: s.sets.map(({ gewicht, reps }) => ({ gewicht, reps })) })) : []
@@ -47,6 +73,13 @@ const num = (v, min, max) => {
 };
 
 export const actions = {
+	licht: async ({ request, locals }) => {
+		const f = await request.formData();
+		const week = plusDagen(maandag(vandaag()), 7);
+		if (f.get('aan') === '1') doe('INSERT OR IGNORE INTO lichte_weken (gebruiker_id, week) VALUES (?, ?)', locals.gebruiker.id, week);
+		else doe('DELETE FROM lichte_weken WHERE gebruiker_id = ? AND week = ?', locals.gebruiker.id, week);
+		return { lichtOk: true };
+	},
 	gewicht: async ({ request, locals }) => {
 		const f = await request.formData();
 		const nieuw = num(f.get('gewicht'), -200, 2000);

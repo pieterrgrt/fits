@@ -5,6 +5,8 @@ import * as eten from '#lib/server/eten.js';
 import { doelenVan } from '#lib/server/etendoelen.js';
 import { vandaag, weekdag, plusDagen } from '#lib/datum.js';
 import { oefening } from '#lib/oefeningen.js';
+import { nogNietHersteld, lichteSets } from '#lib/groei.js';
+import { groepenVan, SPIERGROEPEN } from '#lib/volume.js';
 
 export const load = ({ locals }) => {
 	const g = locals.gebruiker;
@@ -17,6 +19,15 @@ export const load = ({ locals }) => {
 		const o = it.slug ? oefening(it.slug) : null;
 		return { ...it, naam: o?.naam ?? 'Wisselslot', kort: o?.kort, advies: data.adviesVoor(g.id, it, d) };
 	});
+	// Herstel: spiergroepen die je vandaag traint en de laatste 48 uur al zwaar hebt gedaan.
+	const herstel = dagVanVandaag?.soort === 'gym' && !open && !week.trainingen.some((t) => t.datum === d)
+		? nogNietHersteld(data.recenteSets(g.id), [...new Set(items.flatMap((it) => (it.slug ? groepenVan(it.slug) : [])))], groepenVan).map((h) => ({
+				...h,
+				naam: SPIERGROEPEN.find((x) => x.id === h.groep).naam
+			}))
+		: [];
+	const licht = data.isLichteWeek(g.id, d);
+	if (licht) for (const it of items) it.sets_tijdelijk = lichteSets(it.sets_tijdelijk ?? it.sets);
 	const gewicht = data.laatsteGewicht(g.id)?.gewicht ?? g.gewicht;
 	return {
 		titel: 'Vandaag',
@@ -32,6 +43,8 @@ export const load = ({ locals }) => {
 		etenDoelen: doelenVan(g.id),
 		gewicht,
 		onderhoud: g.onderhoud,
+		herstel,
+		licht,
 		gedaanVandaag: week.trainingen.some((t) => t.datum === d)
 	};
 };

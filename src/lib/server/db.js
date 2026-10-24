@@ -4,7 +4,7 @@ import path from 'node:path';
 import { FITS_DATA } from '$app/env/private';
 
 // Eén SQLite-bestand. In Docker staat het op het volume /data (zie docker-compose.yml).
-const map = FITS_DATA ?? path.resolve('data');
+export const map = FITS_DATA ?? path.resolve('data');
 fs.mkdirSync(map, { recursive: true });
 
 export const db = new Database(path.join(map, 'fits.db'));
@@ -268,6 +268,27 @@ const MIGRATIES = [
 		slug TEXT NOT NULL,
 		PRIMARY KEY (training_id, item_id)
 	);
+	`,
+	// 4: groei: lichte weken, voortgangsfoto's, gewicht van je stang
+	`
+	CREATE TABLE lichte_weken (
+		gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id) ON DELETE CASCADE,
+		week TEXT NOT NULL,                          -- maandag van die week
+		PRIMARY KEY (gebruiker_id, week)
+	);
+	ALTER TABLE trainingen ADD COLUMN licht INTEGER NOT NULL DEFAULT 0;  -- gedaan in een lichte week
+
+	CREATE TABLE fotos (
+		id INTEGER PRIMARY KEY,
+		gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id) ON DELETE CASCADE,
+		datum TEXT NOT NULL,
+		kant TEXT NOT NULL,                          -- 'voor', 'zij', 'achter'
+		bestand TEXT NOT NULL,                       -- naam in <FITS_DATA>/fotos/<gebruiker>/
+		gemaakt TEXT NOT NULL DEFAULT (datetime('now'))
+	);
+	CREATE INDEX fotos_datum ON fotos (gebruiker_id, datum);
+
+	ALTER TABLE gebruikers ADD COLUMN stang REAL;            -- gewicht van je halterstang, leeg = 20 kg
 	`
 ];
 

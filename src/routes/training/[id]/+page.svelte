@@ -11,6 +11,7 @@
 	import { oefening } from '#lib/oefeningen.js';
 	import { gewichtTekst, repsTekst, getal } from '#lib/gewicht.js';
 	import { mooi } from '#lib/datum.js';
+	import { schijvenPerKant, gebruiktStang } from '#lib/groei.js';
 
 	let { data, form } = $props();
 	let timer;
@@ -69,6 +70,10 @@
 			if (nieuw) open = nieuw.id;
 		}
 	}
+	const schijven = (it) => {
+		if (!it.slug || !gebruiktStang(it.slug) || it.eenheid !== 'kg' || !(it.gewicht > data.stang)) return null;
+		return schijvenPerKant(it.gewicht, data.stang);
+	};
 	const standaard = (it) => (it.gewicht === 0 && it.oef?.stap !== 'machine' ? '' : it.gewicht);
 </script>
 
@@ -87,6 +92,10 @@
 		<p class="melding amber">{wachtend} {wachtend === 1 ? 'set staat' : 'sets staan'} op je telefoon en {wachtend === 1 ? 'gaat' : 'gaan'} naar de server zodra je bereik hebt.{#if wachtrij.bezig} Bezig…{/if}</p>
 	{/if}
 	{#if wachtrij.fout}<p class="melding fout">{wachtrij.fout}</p>{/if}
+
+	{#if data.training.licht}
+		<p class="melding lila"><span><strong>Lichte week.</strong> Zelfde gewichten, de helft van de sets, en hou in elke set 3 reps over. Zo herstellen je gewrichten en zenuwstelsel; volgende week ga je sterker verder.</span></p>
+	{/if}
 
 	{#if data.dag?.warmup}
 		<details class="kaart warmup">
@@ -163,6 +172,14 @@
 							</div>
 						{/if}
 
+						{#if schijven(it)}
+							{@const p = schijven(it)}
+							<p class="klein schijven" style="margin:0">
+								<span class="gedempt">Per kant op de stang van {getal(data.stang)} kg:</span>
+								{#each p as kg}<span class="schijf" style="--d: {0.9 + Math.sqrt(kg) * 0.18}rem">{getal(kg)}</span>{/each}
+							</p>
+						{/if}
+
 						{#if it.gewicht == null}
 							<p class="melding">Zoek je gewicht: begin licht en bouw per set op tot je in de eerste set ongeveer {it.reps_min} haalt. Zondag zet je dat gewicht vast.</p>
 						{:else if it.advies?.soort === 'zwaarder'}
@@ -186,6 +203,7 @@
 									{sec}
 									gedaan={it.gedaan.find((s) => s.nr === nr)}
 									doelReps={it.doel[nr - 1]}
+									beste={it.beste}
 									standaardGewicht={it.gedaan.find((s) => s.nr === nr - 1)?.gewicht ?? standaard(it)}
 									onopgeslagen={() => rustNa(it, nr)}
 								/>
@@ -281,6 +299,12 @@
 	.keuze { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--r-2); padding: var(--r-2); border-radius: var(--hoek-m); background: var(--vlak-hoog); border: 1px solid var(--lijn); cursor: pointer; width: 100%; }
 	.keuze:hover { border-color: var(--accent); }
 	.warmup summary { list-style: none; }
+	.schijven { display: flex; flex-wrap: wrap; align-items: center; gap: var(--r-1); }
+	.schijf {
+		display: inline-grid; place-items: center; min-width: var(--d); height: var(--d); padding: 0 0.3rem;
+		border-radius: 999px; background: var(--vlak-hoog); border: 2px solid var(--lijn-sterk);
+		font-family: var(--letter-display); font-weight: 800; font-size: var(--maat-xs);
+	}
 	.tweeuur { border: 0; padding: 0; margin: 0; }
 	.tweeuur .vinkje { align-items: flex-start; }
 </style>

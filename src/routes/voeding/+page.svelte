@@ -4,7 +4,9 @@
 	import Verloop from '#lib/Verloop.svelte';
 	import Icoon from '#lib/Icoon.svelte';
 
-	let { data } = $props();
+	import { enhance } from '$app/forms';
+
+	let { data, form } = $props();
 	const d = $derived(data.doelen);
 	const week = $derived(data.dagen.slice(0, 7));
 	const gem = (lijst, k) => {
@@ -35,8 +37,28 @@
 		</div>
 	</section>
 
-	<section class="stapel">
+	<section class="stapel" id="trend">
 		<div class="rij uiteen"><h2>Gewicht</h2>{#if toename != null}<span class="chip" class:volt={toename > 0}>{toename > 0 ? '+' : ''}{getal(toename)} kg</span>{/if}</div>
+		{#if data.trend}
+			{@const t = data.trend}
+			<div class="kaart stapel">
+				<div class="raster twee">
+					<div class="stat"><span class="label">Trend (3 weken)</span><span class="waarde" class:volt={t.perWeek >= 0.1 && t.perWeek <= 0.4}>{t.perWeek > 0 ? '+' : ''}{getal(t.perWeek)}<small> kg/week</small></span></div>
+					<div class="stat"><span class="label">Gemiddeld 7 dagen</span><span class="waarde">{t.gemiddeld != null ? getal(t.gemiddeld) : '–'}<small> kg</small></span></div>
+				</div>
+				<p class="klein" style="margin:0">{t.advies.tekst} <span class="gedempt">Doel: ongeveer 0,2 kg per week. Eén weging zegt weinig (water, eten); de trend over {t.metingen} wegingen wel.</span></p>
+				{#if form?.kcalOk}
+					<p class="melding"><Icoon naam="vink" grootte={16} /> Caloriedoel is nu {form.kcalOk} kcal per dag.</p>
+				{:else if t.advies.stap}
+					<form method="POST" action="?/kcal" use:enhance>
+						<input type="hidden" name="kcal" value={d.kcal + t.advies.stap} />
+						<button class="knop primair vol-breed">Caloriedoel naar {d.kcal + t.advies.stap} kcal ({t.advies.stap > 0 ? '+' : ''}{t.advies.stap})</button>
+					</form>
+				{/if}
+			</div>
+		{:else}
+			<p class="klein gedempt" style="margin:0">Weeg je een paar keer per week ('s ochtends, na het toilet). Na 10 dagen met 4+ wegingen zie je hier of je genoeg eet om aan te komen.</p>
+		{/if}
 		{#if punten.length > 1}
 			<div class="kaart"><Verloop {punten} decimalen={1} onderschrift="Lichaamsgewicht, laatste 6 maanden. Doel: +2 tot +3 kg in 3 maanden." /></div>
 		{:else}
@@ -83,4 +105,5 @@
 	.dag a { text-decoration: none; }
 	.regel { display: grid; grid-template-columns: 1fr 2.75rem; gap: var(--r-2); align-items: center; }
 	.kcal { text-align: right; line-height: 1.2; }
+	.stat .waarde.volt { color: var(--accent-tekst); }
 </style>

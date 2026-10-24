@@ -1,5 +1,5 @@
 <script>
-	// Lijngrafiek door de tijd. punten: [{ datum, waarde, tekst }]; tekst verschijnt bij aanwijzen.
+	// Lijngrafiek door de tijd. punten: [{ datum, waarde, tekst, record? }]; records zijn gevulde punten.; tekst verschijnt bij aanwijzen.
 	let { punten = [], hoogte = 140, onderschrift = '', kleur = 'var(--grafiek)', decimalen = 0 } = $props();
 	const B = 320;
 	const marge = { l: 30, r: 8, b: 18, t: 10 };
@@ -22,7 +22,7 @@
 		<path d="{lijn} L{x(punten.length - 1)},{hoogte - marge.b} L{x(0)},{hoogte - marge.b} Z" class="vlak" />
 		<path d={lijn} class="lijn" />
 		{#each punten as p, i}
-			<circle cx={x(i)} cy={y(p.waarde)} r={actief === i ? 5 : 3.2} class="punt" role="presentation"
+			<circle cx={x(i)} cy={y(p.waarde)} r={actief === i ? 5 : p.record ? 4.2 : 3.2} class="punt" class:record={p.record} role="presentation"
 				onpointerenter={() => (actief = i)} onpointerleave={() => (actief = null)} />
 		{/each}
 	</svg>
@@ -37,4 +37,5 @@
 	.lijn { fill: none; stroke: var(--k); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
 	.vlak { fill: color-mix(in srgb, var(--k) 14%, transparent); }
 	.punt { fill: var(--achtergrond); stroke: var(--k); stroke-width: 2; cursor: pointer; }
+	.punt.record { fill: var(--k); }
 </style>

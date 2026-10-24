@@ -3,6 +3,8 @@
 	let { data } = $props();
 	const LINKS = [
 		{ href: '/zondag', icoon: 'zondag', naam: 'Zondag-check', uitleg: 'Gewichten bijstellen, wisselslot, weekregel' },
+		{ href: '/groei', icoon: 'groei', naam: 'Groei', uitleg: 'Krachtverloop, records, slaap en prestaties' },
+		{ href: '/fotos', icoon: 'foto', naam: 'Fotoverloop', uitleg: 'Elke 4 weken voor, zij en achter' },
 		{ href: '/doelen', icoon: 'doel', naam: 'Doelen', uitleg: 'Je doelen voor de komende maanden' },
 		{ href: '/oefeningen', icoon: 'oefeningen', naam: 'Oefeningen', uitleg: 'Alle oefeningen met uitleg en animatie' },
 		{ href: '/voeding', icoon: 'slaap', naam: 'Overzicht eten en slaap', uitleg: 'Weken, gewicht, slaapfasen' },

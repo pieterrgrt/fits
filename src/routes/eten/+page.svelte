@@ -18,6 +18,9 @@
 		{ naam: 'Koolh.', g: t.koolh, doel: d.koolh, kleur: 'var(--tekst-rustig)' },
 		{ naam: 'Vet', g: t.vet, doel: d.vet, kleur: 'var(--tekst-gedempt)' }
 	]);
+	// Eiwit verspreid over de dag: per moment 30 g of meer zet spieropbouw het best aan.
+	const EIWIT_MOMENT = 30;
+	const momenten = $derived(data.dag.maaltijden.filter((m) => m.totaal.eiwit >= EIWIT_MOMENT).length);
 	const bewaar = () => async ({ update }) => update({ reset: false });
 	let bewaarOpen = $state(null);
 
@@ -62,6 +65,13 @@
 				</div>
 			{/each}
 		</div>
+		<div class="momenten rij" aria-label="Eiwitmomenten">
+			<span class="klein gedempt">Eiwitmomenten (30 g+):</span>
+			{#each data.dag.maaltijden as m (m.id)}
+				<span class="moment" class:raak={m.totaal.eiwit >= EIWIT_MOMENT} title="{m.naam}: {Math.round(m.totaal.eiwit)} g">{m.naam.slice(0, 1)}</span>
+			{/each}
+			<span class="klein tnum"><strong>{momenten}</strong><span class="gedempt">/3–4</span></span>
+		</div>
 		{#if d.geschat}<p class="klein gedempt" style="margin:0">Doel geschat uit je gewicht. <a href="/eten/doelen">Stel je onderhoud in</a> voor een preciezer doel.</p>{/if}
 	</section>
 
@@ -74,7 +84,7 @@
 			<div class="rij uiteen">
 				<div class="stapel krap" style="gap: 0">
 					<h2>{m.naam}</h2>
-					<span class="klein gedempt tnum">{Math.round(m.totaal.kcal)} kcal{m.regels.length ? ` · ${Math.round(m.totaal.eiwit)} g eiwit` : ''}</span>
+					<span class="klein gedempt tnum">{Math.round(m.totaal.kcal)} kcal{#if m.regels.length} · <span class:eiwitraak={m.totaal.eiwit >= EIWIT_MOMENT}>{Math.round(m.totaal.eiwit)} g eiwit</span>{/if}</span>
 				</div>
 				<a class="knop primair vierkant" href="/eten/toevoegen?maaltijd={m.id}&datum={data.datum}" aria-label="Toevoegen aan {m.naam}"><Icoon naam="plus" /></a>
 			</div>
@@ -184,4 +194,12 @@
 	.glas { height: 2.25rem; border-radius: 4px 4px 8px 8px; border: 2px solid var(--lijn-sterk); }
 	.glas.vol { background: color-mix(in srgb, var(--water) 70%, transparent); border-color: var(--water); }
 	.water-knop { --knop-vlak: color-mix(in srgb, var(--water) 18%, var(--vlak-hoog)); }
+	.momenten { gap: var(--r-1); flex-wrap: wrap; }
+	.moment {
+		width: 1.6rem; height: 1.6rem; border-radius: 50%; display: grid; place-items: center;
+		font-size: var(--maat-xs); font-weight: 700; color: var(--tekst-gedempt);
+		box-shadow: inset 0 0 0 1.5px var(--lijn-sterk);
+	}
+	.moment.raak { background: var(--amber); color: var(--achtergrond); box-shadow: none; }
+	.eiwitraak { color: var(--amber); font-weight: 650; }
 </style>

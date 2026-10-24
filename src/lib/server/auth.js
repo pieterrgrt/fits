@@ -52,7 +52,7 @@ export function leesSessie(token) {
 	if (!token) return null;
 	const id = sha(token);
 	const rij = een(
-		`SELECT s.id AS sessie_id, s.verloopt, g.id, g.email, g.naam, g.rol, g.gewicht, g.onderhoud
+		`SELECT s.id AS sessie_id, s.verloopt, g.id, g.email, g.naam, g.rol, g.gewicht, g.onderhoud, g.stang
 		 FROM sessies s JOIN gebruikers g ON g.id = s.gebruiker_id WHERE s.id = ?`,
 		id
 	);

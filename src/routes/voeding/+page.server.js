@@ -1,4 +1,7 @@
-import { alle } from '#lib/server/db.js';
+import { fail } from '@sveltejs/kit';
+import { alle, doe } from '#lib/server/db.js';
+import { wegingen } from '#lib/server/data.js';
+import { gewichtsTrend, kcalAdvies } from '#lib/groei.js';
 import { totalenPerDag } from '#lib/server/eten.js';
 import { doelenVan } from '#lib/server/etendoelen.js';
 import { vandaag, plusDagen } from '#lib/datum.js';
@@ -29,5 +32,17 @@ export const load = ({ locals }) => {
 		 UNION SELECT week, gewicht FROM weekregels WHERE gebruiker_id = ? AND gewicht IS NOT NULL AND week >= ? ORDER BY 1`,
 		g, plusDagen(d, -180), g, plusDagen(d, -180)
 	);
-	return { titel: 'Overzicht eten en slaap', datum: d, dagen, gewicht, doelen: doelenVan(g) };
+	const trend = gewichtsTrend(wegingen(g, plusDagen(d, -21)), d);
+	return { titel: 'Overzicht eten en slaap', datum: d, dagen, gewicht, doelen: doelenVan(g), trend: trend && { ...trend, advies: kcalAdvies(trend) } };
+};
+
+export const actions = {
+	// Caloriedoel bijstellen op basis van je gewichtstrend.
+	kcal: async ({ request, locals }) => {
+		const f = await request.formData();
+		const nieuw = Math.round(Number(f.get('kcal')) / 10) * 10;
+		if (!Number.isFinite(nieuw) || nieuw < 800 || nieuw > 8000) return fail(400, { fout: 'Ongeldig caloriedoel.' });
+		doe('UPDATE gebruikers SET doel_kcal = ? WHERE id = ?', nieuw, locals.gebruiker.id);
+		return { kcalOk: nieuw };
+	}
 };

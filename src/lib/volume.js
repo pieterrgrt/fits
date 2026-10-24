@@ -41,3 +41,18 @@ export function volume(sets) {
 }
 
 export const oordeel = (n) => (n < BEREIK[0] ? 'weinig' : n > BEREIK[1] ? 'veel' : 'goed');
+
+/** De spiergroepen die een oefening echt traint (primair). */
+export function groepenVan(slug) {
+	const o = PER_SLUG[slug];
+	if (!o) return [];
+	return [...new Set(o.spieren.primair.map((m) => groepVanSpier[m]).filter(Boolean))];
+}
+
+/** Spiergroepen onder de 10 sets die een oefening zou aanvullen (laagste eerst). */
+export function vultAan(slug, gepland) {
+	return groepenVan(slug)
+		.filter((g) => (gepland[g] ?? 0) < BEREIK[0])
+		.sort((a, b) => gepland[a] - gepland[b])
+		.map((g) => ({ id: g, naam: SPIERGROEPEN.find((x) => x.id === g).naam, sets: gepland[g] }));
+}

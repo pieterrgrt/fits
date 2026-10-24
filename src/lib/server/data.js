@@ -26,13 +26,16 @@ export function item(gebruikerId, itemId) {
 	return x ? leesItem(x) : null;
 }
 
-/** Eerdere sessies van een oefening, nieuwste eerst: [{ training_id, datum, sets }] */
+/**
+ * Eerdere sessies van een oefening, nieuwste eerst: [{ training_id, datum, sets }].
+ * Trainingen in een lichte week tellen niet mee: daar ga je bewust minder ver.
+ */
 export function geschiedenis(gebruikerId, slug, { limiet = 12, behalve = null } = {}) {
 	const rijen = alle(
 		`SELECT s.*, t.datum FROM sets s JOIN trainingen t ON t.id = s.training_id
 		 WHERE t.gebruiker_id = ? AND s.slug = ? AND t.id IN (
 			SELECT t2.id FROM trainingen t2 JOIN sets s2 ON s2.training_id = t2.id
-			WHERE t2.gebruiker_id = ? AND s2.slug = ? AND t2.id IS NOT ?
+			WHERE t2.gebruiker_id = ? AND s2.slug = ? AND t2.id IS NOT ? AND t2.licht = 0
 			GROUP BY t2.id ORDER BY t2.datum DESC, t2.id DESC LIMIT ?)
 		 ORDER BY t.datum DESC, t.id DESC, s.nr`,
 		gebruikerId, slug, gebruikerId, slug, behalve, limiet
@@ -81,7 +84,8 @@ export const setsVan = (trainingId) => alle('SELECT * FROM sets WHERE training_i
 export function startTraining(gebruikerId, dagId, datum = nu()) {
 	const d = dag(gebruikerId, dagId, { opId: true });
 	if (!d) return null;
-	const { lastInsertRowid } = doe('INSERT INTO trainingen (gebruiker_id, dag_id, titel, datum) VALUES (?, ?, ?, ?)', gebruikerId, d.id, d.titel, datum);
+	const licht = isLichteWeek(gebruikerId, datum) ? 1 : 0;
+	const { lastInsertRowid } = doe('INSERT INTO trainingen (gebruiker_id, dag_id, titel, datum, licht) VALUES (?, ?, ?, ?, ?)', gebruikerId, d.id, d.titel, datum, licht);
 	return Number(lastInsertRowid);
 }
 
@@ -179,3 +183,38 @@ export function vervang(gebruikerId, it, slug) {
 	);
 	return v;
 }
+
+/* ---------- Groei ---------- */
+
+export const isLichteWeek = (gebruikerId, datum = nu()) =>
+	!!een('SELECT 1 FROM lichte_weken WHERE gebruiker_id = ? AND week = ?', gebruikerId, maandag(datum));
+
+export const laatsteLichteWeek = (gebruikerId) =>
+	een('SELECT max(week) AS w FROM lichte_weken WHERE gebruiker_id = ?', gebruikerId).w;
+
+/** Hoogste geschatte maximum (Epley) dat je ooit haalde op een oefening, eventueel zonder één training. */
+export const besteE1rm = (gebruikerId, slug, behalve = null) =>
+	een(
+		`SELECT max(s.gewicht * (1 + s.reps / 30.0)) AS m FROM sets s JOIN trainingen t ON t.id = s.training_id
+		 WHERE t.gebruiker_id = ? AND s.slug = ? AND s.gewicht > 0 AND s.reps BETWEEN 1 AND 20 AND t.id IS NOT ?`,
+		gebruikerId, slug, behalve
+	).m ?? 0;
+
+/** Sets van de laatste uren, voor herstel per spiergroep. */
+export const recenteSets = (gebruikerId, uren = 48) =>
+	alle(
+		`SELECT s.slug, s.gemaakt FROM sets s JOIN trainingen t ON t.id = s.training_id
+		 WHERE t.gebruiker_id = ? AND s.reps > 0 AND s.gemaakt > datetime('now', ?)`,
+		gebruikerId, `-${uren} hours`
+	);
+
+/** Wegingen (oudste eerst) uit dagregels, aangevuld met weekregels. */
+export const wegingen = (gebruikerId, vanaf) =>
+	alle(
+		`SELECT datum, gewicht FROM dagregels WHERE gebruiker_id = ? AND gewicht IS NOT NULL AND datum >= ?
+		 UNION ALL
+		 SELECT week AS datum, gewicht FROM weekregels w WHERE gebruiker_id = ? AND gewicht IS NOT NULL AND week >= ?
+		   AND NOT EXISTS (SELECT 1 FROM dagregels d WHERE d.gebruiker_id = w.gebruiker_id AND d.datum = w.week AND d.gewicht IS NOT NULL)
+		 ORDER BY datum`,
+		gebruikerId, vanaf, gebruikerId, vanaf
+	);

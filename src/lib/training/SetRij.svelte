@@ -5,8 +5,9 @@
 	import Icoon from '#lib/Icoon.svelte';
 	import { getal } from '#lib/gewicht.js';
 	import { wachtrij } from './wachtrij.svelte.js';
+	import { e1rm } from '#lib/groei.js';
 
-	let { training, item, nr, gedaan = null, doelReps, standaardGewicht, sec = false, onopgeslagen } = $props();
+	let { training, item, nr, gedaan = null, doelReps, standaardGewicht, beste = 0, sec = false, onopgeslagen } = $props();
 
 	// Beginwaarden; daarna houdt de rij zijn eigen invoer bij (de rij wordt opnieuw gemaakt als de set verandert).
 	// Een set die nog op de telefoon wacht, telt als gedaan.
@@ -24,6 +25,8 @@
 	let bezig = $state(false);
 	let fout = $state('');
 	const klaar = $derived(!!gedaan || !!wacht);
+	// Hoger geschat maximum dan ooit op deze oefening: een record.
+	const record = $derived(!sec && !!gedaan && beste > 0 && e1rm(gedaan.gewicht, gedaan.reps) > beste + 0.01);
 	const opTelefoon = (cancel) => {
 		wachtrij.bewaar({ training, item: item.id, nr, gewicht: String(gewicht ?? ''), reps: String(reps), rir: String(rir ?? '') });
 		cancel?.();
@@ -76,6 +79,7 @@
 		{#each [0, 1, 2] as r}
 			<button type="button" class="chip" aria-pressed={rir === r} onclick={() => (rir = rir === r ? '' : r)}>{r === 2 ? '2+' : r}</button>
 		{/each}
+		{#if record}<span class="chip volt record"><Icoon naam="omhoog" grootte={12} /> record</span>{/if}
 		{#if wacht}<span class="klein wacht" title="Wordt verstuurd zodra er bereik is">op telefoon</span>{/if}
 		{#if doelReps}<span class="klein gedempt doel">doel {doelReps}{sec ? ' s' : ''}</span>{/if}
 	</div>
@@ -100,6 +104,7 @@
 	.rir { grid-column: 2 / -1; display: flex; gap: var(--r-1); align-items: center; flex-wrap: wrap; }
 	.rir .chip { height: 1.5rem; padding: 0 0.55rem; font-size: var(--maat-xs); }
 	.doel { margin-left: auto; }
+	.record { height: 1.5rem; font-size: var(--maat-xs); }
 	.wacht { color: var(--amber); font-weight: 600; }
 	.set .stepper { grid-template-columns: 2.1rem minmax(2rem, 1fr) 2.1rem; }
 	.set .stepper input { font-stretch: 100%; font-size: 1.3rem; padding: 0; }

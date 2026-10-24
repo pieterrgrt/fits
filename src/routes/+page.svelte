@@ -53,6 +53,12 @@
 					{#if data.gedaanVandaag}<span class="chip volt"><Icoon naam="vink" grootte={14} /> Vandaag al gedaan</span>{/if}
 				</div>
 			</div>
+			{#if data.licht}<p class="melding lila" style="margin:0"><span><strong>Lichte week:</strong> de helft van de sets, 3 reps over.</span></p>{/if}
+			{#if data.herstel.length}
+				<p class="melding amber" style="margin:0">
+					<span><strong>{data.herstel.map((h) => `${h.naam} (${h.sets} sets)`).join(', ')}</strong> heb je {data.herstel[0].uren} uur geleden al zwaar getraind. Spieren groeien tijdens het herstel: doe vandaag liever een andere dag, of houd 1–2 reps meer over.</span>
+				</p>
+			{/if}
 			<ol class="lijst oefenlijst">
 				{#each data.dag.items as it, n}
 					<li>

@@ -2,6 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { een, alle, doe } from '#lib/server/db.js';
 import * as data from '#lib/server/data.js';
 import { PER_SLUG } from '#lib/oefeningen.js';
+import { lichteSets } from '#lib/groei.js';
 
 const laad = (locals, id) => {
 	data.sluitVergeten(locals.gebruiker.id);
@@ -22,15 +23,19 @@ export const load = ({ locals, params }) => {
 		const anders = vandaagAnders.get(schemaItem.id);
 		const it = anders ? { ...schemaItem, ...data.vervanging(g.id, schemaItem, anders), sinds: null, sets_tijdelijk: null, vervangt: schemaItem.slug } : schemaItem;
 		const vorige = it.slug ? data.geschiedenis(g.id, it.slug, { limiet: 1, behalve: t.id })[0] ?? null : null;
+		const aantal = it.sets_tijdelijk ?? it.sets;
 		return {
 			...it,
+			// Lichte week: zelfde gewichten, de helft van de sets, 3 reps over.
+			sets_tijdelijk: t.licht ? lichteSets(aantal) : it.sets_tijdelijk,
+			beste: it.slug ? data.besteE1rm(g.id, it.slug, t.id) : 0,
 			vorige: vorige && { datum: vorige.datum, sets: vorige.sets.map(({ gewicht, reps }) => ({ gewicht, reps })) },
-			doel: it.slug ? data.doelVoor(g.id, it, t.id) : [],
+			doel: !it.slug ? [] : t.licht ? Array(lichteSets(aantal)).fill(it.reps_min) : data.doelVoor(g.id, it, t.id),
 			advies: it.slug ? data.adviesVoor(g.id, it) : null,
 			gedaan: sets.filter((s) => s.item_id === it.id && s.slug === it.slug).map(({ id, nr, gewicht, reps, rir }) => ({ id, nr, gewicht, reps, rir }))
 		};
 	});
-	return { titel: t.titel, training: t, dag, items };
+	return { titel: t.titel, training: t, dag, items, stang: g.stang ?? 20 };
 };
 
 const vervangingen = (trainingId) =>

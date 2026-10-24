@@ -6,6 +6,7 @@
 	import Figuur from '#lib/figuur/Figuur.svelte';
 	import Icoon from '#lib/Icoon.svelte';
 	import Volume from '#lib/Volume.svelte';
+	import { SPIERGROEPEN, BEREIK } from '#lib/volume.js';
 
 	let { data, form } = $props();
 	const bewaar = () => async ({ update }) => update({ reset: false });
@@ -20,6 +21,8 @@
 	const slaapGem = $derived(gem(data.week.dagregels, 'slaap'));
 	const gewichtGem = $derived(gem(data.week.dagregels, 'gewicht'));
 	const wr = $derived(data.week.weekregel ?? {});
+	const tekort = $derived(Object.entries(data.volume.gepland).filter(([, n]) => n < BEREIK[0]).sort((a, b) => a[1] - b[1]));
+	const naamVan = (id) => SPIERGROEPEN.find((g) => g.id === id)?.naam.toLowerCase();
 </script>
 
 <main class="app stapel ruim">
@@ -29,6 +32,37 @@
 		<p class="rustig">Hier verander je gewichten. In de gym niet.</p>
 	</header>
 	{#if form?.fout}<p class="melding fout">{form.fout}</p>{/if}
+
+	{#if data.licht.nu}
+		<p class="melding lila"><span><strong>Dit is een lichte week.</strong> Zelfde gewichten, de helft van de sets. Volgende week ga je weer vol.</span></p>
+	{/if}
+	{#if data.licht.volgende}
+		<form method="POST" action="?/licht" class="melding lila rij uiteen" use:enhance={bewaar}>
+			<span><strong>Volgende week is een lichte week.</strong> Je trainingen tonen vanzelf de helft van de sets.</span>
+			<input type="hidden" name="aan" value="0" />
+			<button class="knop klein stil">Toch niet</button>
+		</form>
+	{:else if data.licht.advies.voorstel && !data.licht.nu}
+		<section class="kaart stapel licht">
+			<div class="rij uiteen"><span class="label">Voorstel</span><span class="chip lila">lichte week</span></div>
+			<h2>Tijd voor een lichte week</h2>
+			<p class="rustig" style="margin:0">{data.licht.advies.reden} Eén week met de helft van de sets (zelfde gewichten, 3 reps over) laat je lichaam bijkomen. Daarna til je meestal meer dan ervoor.</p>
+			<form method="POST" action="?/licht" use:enhance={bewaar}>
+				<input type="hidden" name="aan" value="1" />
+				<button class="knop primair vol-breed">Maak volgende week licht</button>
+			</form>
+		</section>
+	{/if}
+
+	{#if !data.laatsteFoto || (Date.parse(data.datum) - Date.parse(data.laatsteFoto)) / 86400000 >= 28}
+		<a class="kaart rij uiteen herinnering" href="/fotos">
+			<span class="stapel krap" style="gap: 2px">
+				<strong>{data.laatsteFoto ? 'Tijd voor nieuwe foto’s' : 'Begin je fotoverloop'}</strong>
+				<span class="klein gedempt">{data.laatsteFoto ? `Vorige keer ${mooi(data.laatsteFoto)}.` : 'Elke 4 weken voor, zij en achter.'} De weegschaal laat spieren slecht zien; foto's wel.</span>
+			</span>
+			<Icoon naam="pijl" />
+		</a>
+	{/if}
 
 	<!-- 1 + 2: per oefening de laatste 2 sessies → nieuw gewicht -->
 	<section class="stapel">
@@ -94,6 +128,9 @@
 	<section class="stapel">
 		<div class="rij"><span class="stap">2</span><h2>Wisselslot</h2></div>
 		<p class="rustig" style="margin:0">Kies per dag één nieuw apparaat voor komende week. Bevalt het na 2–3 weken beter dan een vaste oefening? Wissel ze om in het schema.</p>
+		{#if tekort.length}
+			<p class="klein" style="margin:0"><span class="gedempt">Onder de 10 sets per week:</span> {tekort.map(([g, n]) => `${naamVan(g)} (${getal(n)})`).join(', ')}. Opties met <span class="vult">+</span> vullen dat aan en staan bovenaan.</p>
+		{/if}
 		{#each wissels as it (it.id)}
 			<div class="kaart stapel krap">
 				<div class="rij uiteen"><strong>{it.dag}</strong>{#if it.slug}<span class="klein gedempt">nu: {oefening(it.slug).kort}{it.sinds ? ` · ${hoeLang(it.sinds)}` : ''}</span>{/if}</div>
@@ -104,6 +141,7 @@
 						<button name="slug" value={o.slug} class="optie" aria-pressed={it.slug === o.slug}>
 							<Figuur anim={oef.anim} klein speelt={false} label={oef.naam} />
 							<span class="klein">{oef.kort}{o.hint ? ` · ${o.hint}` : ''}</span>
+							{#if o.vult.length}<span class="vult klein">+ {o.vult.map((v) => v.naam.toLowerCase()).join(', ')}</span>{/if}
 						</button>
 					{/each}
 				</form>
@@ -128,6 +166,11 @@
 			<label class="veld"><span>Gemist</span><input name="gemist" value={wr.gemist ?? ''} placeholder="bv. do (ziek)" /></label>
 			<label class="veld" style="grid-column: 1 / -1"><span>Notitie</span><input name="notitie" value={wr.notitie ?? ''} /></label>
 			<button class="knop primair" style="grid-column: 1 / -1">{form?.weekOk ? 'Opgeslagen ✓' : 'Weekregel opslaan'}</button>
+			{#if data.trend}
+				<a href="/voeding#trend" class="klein trendregel" style="grid-column: 1 / -1">
+					<span class="gedempt">Gewichtstrend:</span> {data.trend.advies.tekst} →
+				</a>
+			{/if}
 			{#if form?.weekFout}<p class="melding fout" style="grid-column: 1 / -1">{form.weekFout}</p>{/if}
 			<p class="klein gedempt" style="grid-column: 1 / -1; margin: 0">
 				Deze week: {data.week.trainingen.length} trainingen · {data.week.activiteiten.length}× cardio{#if slaapGem} · slaap gem. {getal(Math.round(slaapGem * 10) / 10)} u{/if}
@@ -154,4 +197,7 @@
 	}
 	.optie[aria-pressed='true'] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 	.optie:focus-visible { outline: 2px solid var(--accent); }
+	.vult { color: var(--accent-tekst); font-weight: 650; }
+	.licht { border-color: color-mix(in srgb, var(--lila) 50%, var(--lijn)); }
+	.herinnering, .trendregel { color: inherit; text-decoration: none; }
 </style>

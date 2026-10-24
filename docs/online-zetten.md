@@ -39,7 +39,7 @@ Neem deze rij over in de tabel van *Website live zetten op Hetzner*. Poorten in 
    server {
        listen 80;
        server_name fits.alduslab.eu;
-       client_max_body_size 2m;
+       client_max_body_size 25m;   # voortgangsfoto's
        location / {
            proxy_pass http://127.0.0.1:8005;
            proxy_set_header Host $host;

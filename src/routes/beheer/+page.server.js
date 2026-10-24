@@ -1,3 +1,4 @@
+import { verwijderAlles } from '#lib/server/fotos.js';
 import { fail } from '@sveltejs/kit';
 import { alle, doe, een } from '#lib/server/db.js';
 import { maakUitnodiging } from '#lib/server/auth.js';
@@ -43,6 +44,7 @@ export const actions = {
 		if (id === locals.gebruiker.id) return fail(400, { fout: 'Verwijder je eigen account via Account.' });
 		if (!een('SELECT 1 FROM gebruikers WHERE id = ?', id)) return fail(404, { fout: 'Onbekende gebruiker.' });
 		doe('DELETE FROM gebruikers WHERE id = ?', id);
+		verwijderAlles(id);
 		return { ok: true };
 	}
 };
