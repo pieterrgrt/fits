@@ -3,7 +3,7 @@ import { COOKIE, leesSessie } from '#lib/server/auth.js';
 
 // Pagina's die je zonder in te loggen mag zien.
 // /api/… regelt zelf de toegang (met een persoonlijke sleutel).
-const OPEN = ['/inloggen', '/registreren', '/ontwerp', '/gezond', '/api'];
+const OPEN = ['/inloggen', '/registreren', '/ontwerp', '/gezond', '/health', '/api'];
 
 export async function handle({ event, resolve }) {
 	const token = event.cookies.get(COOKIE);
