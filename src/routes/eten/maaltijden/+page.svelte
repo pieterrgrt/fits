@@ -1,5 +1,5 @@
 <script>
-	import { enhance } from '$app/forms';
+	import { verzend } from '#lib/verzend.js';
 	import Icoon from '#lib/Icoon.svelte';
 	import { getal } from '#lib/gewicht.js';
 	let { data } = $props();
@@ -26,7 +26,7 @@
 			<ul class="lijst klein" style="margin-top: var(--r-3)">
 				{#each m.items as it}<li class="rij uiteen"><span>{it.naam}</span><span class="gedempt tnum">{it.portie ?? `${getal(it.hoeveelheid)} g`} · {Math.round(it.kcal)} kcal</span></li>{/each}
 			</ul>
-			<form method="POST" action="?/weg" use:enhance onsubmit={(e) => { if (!confirm(`"${m.naam}" verwijderen?`)) e.preventDefault(); }}>
+			<form method="POST" action="?/weg" use:verzend={{ bevestig: `"${m.naam}" verwijderen?` }}>
 				<input type="hidden" name="id" value={m.id} /><button class="knop klein stil" style="color: var(--fout)">Verwijderen</button>
 			</form>
 		</details>

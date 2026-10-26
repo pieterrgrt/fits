@@ -13,6 +13,8 @@ html {
 	text-size-adjust: 100%;
 	-webkit-tap-highlight-color: transparent;
 	background: var(--achtergrond);
+	/* Laat height: auto meeschuiven (uitklappen van <details>), waar de browser dat kan. */
+	interpolate-size: allow-keywords;
 }
 
 body {
@@ -25,6 +27,8 @@ body {
 	line-height: 1.5;
 	font-feature-settings: 'cv11' 1, 'ss01' 1;
 	-webkit-font-smoothing: antialiased;
+	/* Geen dubbeltik-zoom: elke tik is meteen een tik. */
+	touch-action: manipulation;
 }
 
 img, svg { display: block; max-width: 100%; }
@@ -106,7 +110,7 @@ p { margin: 0 0 var(--r-3); }
 .kaart.vol { background: var(--accent); color: var(--op-accent); border-color: transparent; }
 .kaart.vol .label, .kaart.vol .gedempt { color: color-mix(in srgb, var(--op-accent) 65%, transparent); }
 a.kaart { text-decoration: none; display: block; transition: transform var(--snel) var(--veer), border-color var(--snel); }
-a.kaart:hover { border-color: var(--lijn-sterk); }
+@media (hover: hover) { a.kaart:hover { border-color: var(--lijn-sterk); } }
 a.kaart:active { transform: scale(0.985); }
 .kaart > h2, .kaart > h3 { margin-bottom: var(--r-3); }
 
@@ -133,7 +137,7 @@ a.kaart:active { transform: scale(0.985); }
 	user-select: none;
 	transition: transform var(--snel) var(--veer), background var(--snel), opacity var(--snel);
 }
-.knop:hover { filter: brightness(1.08); }
+@media (hover: hover) { .knop:hover { filter: brightness(1.08); } }
 .knop:active { transform: scale(0.97); }
 .knop[disabled], .knop[aria-disabled='true'] { opacity: 0.45; pointer-events: none; }
 .knop.primair { --knop-vlak: var(--accent); --knop-tekst: var(--op-accent); }
@@ -145,6 +149,23 @@ a.kaart:active { transform: scale(0.985); }
 .knop.vierkant { padding: 0; width: 2.75rem; }
 .knop.vol-breed { width: 100%; }
 .knop svg { width: 1.15em; height: 1.15em; }
+
+/* Bezig met versturen: draaiertje in plaats van de tekst (zie src/lib/verzend.js). */
+.knop.bezig { position: relative; color: transparent; pointer-events: none; }
+.knop.bezig[disabled] { opacity: 1; }
+.knop.bezig::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 1.1em;
+	height: 1.1em;
+	border-radius: 50%;
+	border: 2px solid var(--knop-tekst);
+	border-right-color: transparent;
+	animation: draai 0.7s linear infinite;
+}
+@keyframes draai { to { transform: rotate(1turn); } }
 
 /* ---------- Chip en badge ---------- */
 
@@ -168,7 +189,8 @@ a.kaart:active { transform: scale(0.985); }
 .chip.koraal { background: var(--koraal-tint); color: var(--koraal); }
 .chip.fout { background: var(--fout-tint); color: var(--fout); }
 .chip.omlijnd { background: transparent; box-shadow: inset 0 0 0 1px var(--lijn-sterk); }
-button.chip { border: 0; cursor: pointer; font-family: inherit; }
+button.chip { border: 0; cursor: pointer; font-family: inherit; transition: background var(--snel), color var(--snel), transform var(--snel) var(--veer); }
+button.chip:active { transform: scale(0.94); }
 .chip[aria-pressed='true'] { background: var(--accent); color: var(--op-accent); }
 
 .stip { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; flex: none; }
@@ -217,6 +239,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
 	font: 700 1.25rem/1 var(--letter-tekst);
 	cursor: pointer;
 }
+.stepper button { transition: background var(--snel); }
 .stepper button:active { background: var(--lijn); }
 .stepper input {
 	width: 100%;
@@ -232,6 +255,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
 }
 .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .stepper input:focus { outline: none; }
+.stepper { transition: border-color var(--snel); }
 .stepper:focus-within { border-color: var(--accent); }
 
 /* ---------- Stat-tegel ---------- */
@@ -258,7 +282,9 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
 	border-radius: inherit;
 	background: var(--balk-kleur, var(--grafiek));
 	transition: width var(--traag) var(--veer);
+	animation: balk-in 600ms var(--veer) both;
 }
+@keyframes balk-in { from { width: 0; } }
 
 /* ---------- Lijst ---------- */
 
@@ -275,7 +301,9 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
 	background: var(--accent-tint);
 	color: var(--tekst);
 	font-size: var(--maat-s);
+	animation: melding-in var(--gewoon) var(--veer) both;
 }
+@keyframes melding-in { from { opacity: 0; transform: translateY(-4px); } }
 .melding.fout { background: var(--fout-tint); }
 .melding.amber { background: var(--amber-tint); }
 .melding.lila { background: var(--lila-tint); }
@@ -297,6 +325,7 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
 	backdrop-filter: blur(16px) saturate(1.4);
 	-webkit-backdrop-filter: blur(16px) saturate(1.4);
 	border-top: var(--rand) solid var(--lijn);
+	view-transition-name: tabbalk;
 }
 .tabbalk a {
 	flex: 1;
@@ -309,10 +338,46 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
 	text-decoration: none;
 	font-size: 0.6875rem;
 	font-weight: 600;
+	transition: color var(--gewoon);
 }
-.tabbalk a svg { width: 1.5rem; height: 1.5rem; }
+.tabicoon { display: grid; place-items: center; width: 3.5rem; height: 2rem; transition: transform var(--snel) var(--veer); }
+.tabbalk a:active .tabicoon { transform: scale(0.88); }
+.tabbalk a svg { width: 1.5rem; height: 1.5rem; transition: color var(--gewoon); }
 .tabbalk a[aria-current='page'] { color: var(--tekst); }
 .tabbalk a[aria-current='page'] svg { color: var(--accent); }
+/* Het pilletje achter de actieve tab schuift mee naar de tab die je kiest. */
+.tabstip {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 20%;
+	height: var(--tabbalk);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.2rem;
+	font-size: 0.6875rem;
+	pointer-events: none;
+	transform: translateX(calc(var(--tab) * 100%));
+	transition: transform var(--traag) var(--veer);
+}
+.tabstip i { display: block; width: 3.5rem; height: 2rem; border-radius: var(--hoek-rond); background: var(--accent-tint); }
+
+/* ---------- Laadbalk (bovenin, als een pagina even op zich laat wachten) ---------- */
+
+.laadbalk {
+	position: fixed;
+	inset: 0 0 auto 0;
+	z-index: 60;
+	height: 3px;
+	background: var(--accent);
+	box-shadow: 0 0 8px var(--accent);
+	transform-origin: left;
+	animation: laden 8s cubic-bezier(0.1, 0.7, 0.2, 1) 150ms both;
+	pointer-events: none;
+}
+@keyframes laden { from { transform: scaleX(0); } to { transform: scaleX(0.92); } }
 
 /* ---------- Leeg ---------- */
 
@@ -336,3 +401,51 @@ button.chip { border: 0; cursor: pointer; font-family: inherit; }
 hr { border: 0; border-top: var(--rand) solid var(--lijn); margin: var(--r-5) 0; }
 details > summary { cursor: pointer; list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
+details::details-content {
+	block-size: 0;
+	overflow: clip;
+	transition: block-size var(--gewoon) var(--veer), content-visibility var(--gewoon) allow-discrete;
+}
+details[open]::details-content { block-size: auto; }
+
+/* ---------- Pagina-overgangen ----------
+   Via de View Transitions API (src/routes/+layout.svelte). html[data-richting] zegt welke kant op:
+   vooruit = de nieuwe pagina komt van rechts, terug = van links, zelfde = alleen vervagen.
+   De tabbalk blijft staan; alleen het pilletje erin schuift. */
+
+@view-transition { navigation: auto; }
+
+/* De oude pagina is snel weg; de nieuwe komt pas als die grotendeels verdwenen is, zodat ze niet door elkaar staan. */
+::view-transition-old(root) { animation: 130ms cubic-bezier(0.4, 0, 1, 1) both pagina-weg; }
+::view-transition-new(root) { animation: 300ms var(--veer) 90ms both pagina-in; }
+html[data-richting='vooruit']::view-transition-old(root) { animation-name: weg-links; }
+html[data-richting='vooruit']::view-transition-new(root) { animation-name: in-rechts; }
+html[data-richting='terug']::view-transition-old(root) { animation-name: weg-rechts; }
+html[data-richting='terug']::view-transition-new(root) { animation-name: in-links; }
+
+/* Bovenbalk en tabbalk staan stil: alleen de nieuwe, levende versie is te zien. */
+::view-transition-group(tabbalk), ::view-transition-group(bovenbalk) { animation: none; }
+::view-transition-old(tabbalk), ::view-transition-old(bovenbalk) { display: none; }
+::view-transition-new(tabbalk), ::view-transition-new(bovenbalk) { animation: none; }
+/* Naar of van een training: ze verdwijnen of komen terug. */
+::view-transition-old(tabbalk):only-child, ::view-transition-old(bovenbalk):only-child { display: block; animation: 130ms ease-in both pagina-weg; }
+::view-transition-new(tabbalk):only-child, ::view-transition-new(bovenbalk):only-child { animation: 240ms var(--veer) both pagina-in; }
+
+@keyframes pagina-weg { to { opacity: 0; } }
+@keyframes pagina-in { from { opacity: 0; } }
+@keyframes weg-links { to { opacity: 0; transform: translateX(-1.5rem); } }
+@keyframes weg-rechts { to { opacity: 0; transform: translateX(1.5rem); } }
+@keyframes in-rechts { from { opacity: 0; transform: translateX(2rem); } }
+@keyframes in-links { from { opacity: 0; transform: translateX(-2rem); } }
+
+/* Liever geen beweging: ook vaste duren (zoals de rusttimer) staan dan stil. */
+@media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after, ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
+		animation-duration: 0.01ms !important;
+		animation-delay: 0ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+	.knop.bezig::after { animation-duration: 1.4s !important; animation-iteration-count: infinite !important; }
+	.laadbalk { animation: none; transform: scaleX(0.6); }
+}

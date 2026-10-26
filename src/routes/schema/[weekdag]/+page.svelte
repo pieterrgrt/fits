@@ -1,6 +1,7 @@
 <script>
 	import { untrack, tick } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { verzend } from '#lib/verzend.js';
 	import { DAGEN, mooi, hoeLang } from '#lib/datum.js';
 	import { gewichtTekst } from '#lib/gewicht.js';
 	import { oefening } from '#lib/oefeningen.js';
@@ -190,7 +191,7 @@
 						<label class="veld" style="grid-column: 1 / -1"><span>Notitie</span><input name="notitie" value={it.notitie ?? ''} /></label>
 						<button class="knop primair" style="grid-column: 1 / -1">{form?.ok === it.id ? 'Opgeslagen ✓' : 'Opslaan'}</button>
 					</form>
-					<form method="POST" action="?/weg" use:enhance onsubmit={(e) => { if (!confirm('Uit het schema halen? Je logboek blijft bewaard.')) e.preventDefault(); }}>
+					<form method="POST" action="?/weg" use:verzend={{ bevestig: 'Uit het schema halen? Je logboek blijft bewaard.' }}>
 						<input type="hidden" name="id" value={it.id} /><button class="knop klein stil" style="color: var(--fout)">Uit het schema halen</button>
 					</form>
 				</div>

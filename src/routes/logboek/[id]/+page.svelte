@@ -1,4 +1,5 @@
 <script>
+	import { verzend } from '#lib/verzend.js';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { mooi } from '#lib/datum.js';
@@ -67,8 +68,8 @@
 	<details class="klein">
 		<summary class="gedempt">Meer</summary>
 		<div class="rij" style="margin-top: var(--r-3)">
-			<form method="POST" action="?/heropen"><button class="knop klein omlijnd"><Icoon naam="bewerk" grootte={16} /> Sets aanpassen</button></form>
-			<form method="POST" action="?/verwijder" onsubmit={(e) => { if (!confirm('Deze training verwijderen?')) e.preventDefault(); }}>
+			<form method="POST" action="?/heropen" use:verzend><button class="knop klein omlijnd"><Icoon naam="bewerk" grootte={16} /> Sets aanpassen</button></form>
+			<form method="POST" action="?/verwijder" use:verzend={{ bevestig: 'Deze training verwijderen?' }}>
 				<button class="knop klein gevaar">Verwijderen</button>
 			</form>
 		</div>

@@ -7,7 +7,7 @@
 	import { wachtrij } from './wachtrij.svelte.js';
 	import { e1rm } from '#lib/groei.js';
 
-	let { training, item, nr, gedaan = null, doelReps, standaardGewicht, beste = 0, sec = false, onopgeslagen } = $props();
+	let { training, item, nr, gedaan = null, doelReps, standaardGewicht, beste = 0, sec = false, vers = false, onopgeslagen } = $props();
 
 	// Beginwaarden; daarna houdt de rij zijn eigen invoer bij (de rij wordt opnieuw gemaakt als de set verandert).
 	// Een set die nog op de telefoon wacht, telt als gedaan.
@@ -41,6 +41,7 @@
 	action="?/set"
 	class="set"
 	class:klaar
+	class:vers
 	use:enhance={({ cancel }) => {
 		fout = '';
 		// Geen bereik: meteen op de telefoon bewaren, dan kun je door.
@@ -71,7 +72,7 @@
 		<input name="reps" type="number" inputmode="numeric" bind:value={reps} aria-label="{sec ? 'Seconden' : 'Reps'} set {nr}" />
 		<button type="button" onclick={() => bijstellen(sec ? 5 : 1)} aria-label="Meer">+</button>
 	</div>
-	<button class="knop vierkant" class:primair={klaar} class:omlijnd={!klaar} disabled={bezig} aria-label={klaar ? `Set ${nr} bijwerken` : `Set ${nr} opslaan`}>
+	<button class="knop vierkant opslaan" class:primair={klaar} class:omlijnd={!klaar} class:bezig disabled={bezig} aria-label={klaar ? `Set ${nr} bijwerken` : `Set ${nr} opslaan`}>
 		<Icoon naam="vink" />
 	</button>
 	<div class="rir" role="group" aria-label="Hoeveel reps had je nog gekund?">
@@ -109,4 +110,11 @@
 	.set .stepper { grid-template-columns: 2.1rem minmax(2rem, 1fr) 2.1rem; }
 	.set .stepper input { font-stretch: 100%; font-size: 1.3rem; padding: 0; }
 	.klaar .stepper { border-color: color-mix(in srgb, var(--accent) 40%, var(--lijn)); }
+	.nr, .stepper { transition: color var(--gewoon), border-color var(--gewoon); }
+	/* Net opgeslagen: het vinkje springt even op en de rij licht kort op. */
+	.vers { animation: oplichten 700ms ease-out; }
+	.vers .opslaan { animation: plop 420ms var(--veer); }
+	.record { animation: plop 520ms var(--veer); }
+	@keyframes plop { 40% { transform: scale(1.15); } }
+	@keyframes oplichten { from { background: var(--accent-tint); } }
 </style>

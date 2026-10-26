@@ -5,6 +5,7 @@
 	import Icoon from '#lib/Icoon.svelte';
 	import { OEFENINGEN, SPIEREN, oefening } from '#lib/oefeningen.js';
 	import { alternatieven, groepVan } from '#lib/alternatieven.js';
+	import { paneel, vervaag } from '#lib/beweging.js';
 
 	/** @type {{ slug: string, actie: string, velden?: Record<string, any>, vandaag?: boolean, sluit: () => void }} */
 	let { slug, actie, velden = {}, vandaag = false, sluit } = $props();
@@ -32,8 +33,8 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && sluit()} />
 
-<div class="achter" role="presentation" onclick={sluit}></div>
-<div class="paneel" role="dialog" aria-modal="true" aria-label="Andere oefening kiezen">
+<div class="achter" role="presentation" onclick={sluit} transition:vervaag></div>
+<div class="paneel" role="dialog" aria-modal="true" aria-label="Andere oefening kiezen" transition:paneel>
 	<header class="rij uiteen">
 		<div class="stapel krap" style="gap: 0">
 			<span class="label">Vervang</span>
@@ -111,9 +112,8 @@
 		border: 1px solid var(--lijn);
 		border-radius: var(--hoek-l) var(--hoek-l) 0 0;
 		box-shadow: 0 -20px 50px -20px rgb(0 0 0 / 0.6);
-		animation: op var(--gewoon) var(--veer);
+		overscroll-behavior: contain;
 	}
-	@keyframes op { from { transform: translateY(24px); opacity: 0; } }
 	.paneel header { position: sticky; top: calc(-1 * var(--r-4)); background: var(--vlak); padding-top: var(--r-1); z-index: 1; }
 	.bereik { display: flex; flex-wrap: wrap; gap: var(--r-1); }
 	.bereik .chip { cursor: pointer; }
@@ -133,7 +133,9 @@
 		border: 1px solid var(--lijn);
 		cursor: pointer;
 	}
+	.optie { transition: border-color var(--snel), transform var(--snel) var(--veer); }
 	.optie:hover { border-color: var(--accent); }
+	.optie:active { transform: scale(0.985); }
 	.optie:focus-visible { outline: 2px solid var(--accent); }
 	.beeld { display: block; background: var(--vlak); border-radius: var(--hoek-s); }
 	.naam { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

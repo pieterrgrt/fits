@@ -5,6 +5,7 @@
 	import Ring from '#lib/Ring.svelte';
 	import { DAGEN, DAGEN_KORT, mooi, weeknummer, weekdag, hoeLang, plusDagen } from '#lib/datum.js';
 	import { gewichtTekst, getal } from '#lib/gewicht.js';
+	import { verzend } from '#lib/verzend.js';
 
 	let { data, form } = $props();
 
@@ -17,6 +18,7 @@
 	const isBeen = (d) => d?.code?.startsWith('legs');
 	const geenCardio = $derived(isBeen(data.gisteren) || isBeen(data.morgen));
 	let opgeslagen = $state(false);
+	let bezig = $state(false);
 </script>
 
 <main class="app stapel ruim">
@@ -77,7 +79,8 @@
 					</li>
 				{/each}
 			</ol>
-			<form method="POST" action="?/start">
+			{#if form?.fout}<p class="melding fout" style="margin:0">{form.fout}</p>{/if}
+			<form method="POST" action="?/start" use:verzend>
 				<input type="hidden" name="dag" value={data.dag.id} />
 				<button class="knop primair groot vol-breed">Start {data.dag.titel} <Icoon naam="pijl" /></button>
 			</form>
@@ -142,10 +145,14 @@
 			method="POST"
 			action="?/dagregel"
 			class="raster twee"
-			use:enhance={() => async ({ update, result }) => {
-				await update({ reset: false });
-				opgeslagen = result.type === 'success';
-				setTimeout(() => (opgeslagen = false), 2000);
+			use:enhance={() => {
+				bezig = true;
+				return async ({ update, result }) => {
+					await update({ reset: false });
+					bezig = false;
+					opgeslagen = result.type === 'success';
+					setTimeout(() => (opgeslagen = false), 2000);
+				};
 			}}
 		>
 			<input type="hidden" name="datum" value={data.datum} />
@@ -155,7 +162,7 @@
 				{#if data.dagregel.slaap_bron === 'gezondheid'}<small style="color: var(--lila)">uit Apple Gezondheid</small>{:else}<small><a href="/gezondheid">Automatisch uit Gezondheid?</a></small>{/if}
 			</label>
 			<label class="veld"><span>Gewicht (kg)</span><input name="gewicht" inputmode="decimal" placeholder={data.gewicht ? getal(data.gewicht) : '75'} value={data.dagregel.gewicht != null ? getal(data.dagregel.gewicht) : ''} /><small>Af en toe, nuchter</small></label>
-			<button class="knop omlijnd" style="grid-column: 1 / -1">{#if opgeslagen}<Icoon naam="vink" /> Opgeslagen{:else}Opslaan{/if}</button>
+			<button class="knop omlijnd" class:bezig style="grid-column: 1 / -1">{#if opgeslagen}<Icoon naam="vink" /> Opgeslagen{:else}Opslaan{/if}</button>
 			{#if form?.dagFout}<p class="melding fout" style="grid-column: 1 / -1">{form.dagFout}</p>{/if}
 		</form>
 	</section>
@@ -172,6 +179,9 @@
 	.pijler .waarde { font-size: var(--maat-l); }
 	@media (max-width: 30rem) { .pijler { flex-direction: column; align-items: flex-start; } }
 	.weekstrook { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--r-1); }
+	.dagje { transition: background var(--snel), transform var(--snel) var(--veer); }
+	.dagje:active { transform: scale(0.94); }
+	.bol { transition: background var(--gewoon), color var(--gewoon); }
 	.dagje { display: flex; flex-direction: column; align-items: center; gap: var(--r-1); text-decoration: none; padding: var(--r-2) 0; border-radius: var(--hoek-m); }
 	.dagje.vandaag { background: var(--vlak); box-shadow: inset 0 0 0 1px var(--lijn); }
 	.dagje.vandaag .label { color: var(--accent-tekst); }

@@ -1,4 +1,5 @@
 <script>
+	import { verzend } from '#lib/verzend.js';
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import Icoon from '#lib/Icoon.svelte';
@@ -54,7 +55,7 @@
 		{#if p.merk}<p class="rustig" style="margin:0">{p.merk}</p>{/if}
 	</header>
 
-	<form method="POST" action="?/toevoegen" class="kaart stapel">
+	<form method="POST" action="?/toevoegen" class="kaart stapel" use:verzend>
 		<input type="hidden" name="datum" value={data.datum} />
 		<div class="hoeveel">
 			<div class="stepper">
@@ -104,7 +105,7 @@
 	</section>
 
 	{#if p.bron === 'eigen'}
-		<form method="POST" action="?/verwijder" onsubmit={(e) => { if (!confirm('Dit product verwijderen? Je dagboek blijft kloppen.')) e.preventDefault(); }}>
+		<form method="POST" action="?/verwijder" use:verzend={{ bevestig: 'Dit product verwijderen? Je dagboek blijft kloppen.' }}>
 			<button class="knop stil klein" style="color: var(--fout)">Eigen product verwijderen</button>
 		</form>
 	{/if}

@@ -1,4 +1,5 @@
 <script>
+	import { verzend } from '#lib/verzend.js';
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
@@ -121,7 +122,7 @@
 			{:else}<p class="leeg">Tik bij een product op het hartje om het hier te zetten.</p>{/if}
 		{:else if tab === 'maaltijden'}
 			{#each data.maaltijden as m (m.id)}
-				<form method="POST" action="?/maaltijd&{terug}" class="kaart rij uiteen">
+				<form method="POST" action="?/maaltijd&{terug}" class="kaart rij uiteen" use:verzend>
 					<input type="hidden" name="id" value={m.id} />
 					<span class="stapel krap" style="gap: 0; flex: 1; min-width: 0">
 						<strong>{m.naam}</strong>
@@ -137,7 +138,7 @@
 			{#if data.eigen.length}<ul class="lijst kaart resultaten">{#each data.eigen as p (p.id)}{@render product(p)}{/each}</ul>{/if}
 			<a class="knop omlijnd" href="/eten/product/nieuw?{terug}"><Icoon naam="plus" grootte={18} /> Eigen product maken</a>
 		{:else}
-			<form method="POST" action="?/snel&{terug}" class="kaart raster twee">
+			<form method="POST" action="?/snel&{terug}" class="kaart raster twee" use:verzend>
 				<label class="veld" style="grid-column: 1 / -1"><span>Omschrijving</span><input name="naam" placeholder="bv. Lunch op het werk" /></label>
 				<label class="veld"><span>kcal</span><input name="kcal" inputmode="numeric" required /></label>
 				<label class="veld"><span>Eiwit (g)</span><input name="eiwit" inputmode="decimal" /></label>

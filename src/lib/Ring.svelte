@@ -6,7 +6,7 @@
 	const deel = $derived(Math.max(0, Math.min(1, waarde || 0)));
 </script>
 
-<div class="ring" style="--g: {grootte}px; --k: var(--{kleur === 'volt' ? 'grafiek' : kleur})">
+<div class="ring" style="--g: {grootte}px; --omtrek: {omtrek}; --k: var(--{kleur === 'volt' ? 'grafiek' : kleur})">
 	<svg width={grootte} height={grootte} viewBox="0 0 {grootte} {grootte}" aria-hidden="true">
 		<circle cx={grootte / 2} cy={grootte / 2} {r} stroke-width={dik} class="baan" />
 		{#if deel > 0}<circle
@@ -26,6 +26,8 @@
 	.ring { position: relative; width: var(--g); height: var(--g); flex: none; }
 	circle { fill: none; stroke-linecap: round; }
 	.baan { stroke: color-mix(in srgb, var(--k) 16%, transparent); }
-	.vulling { stroke: var(--k); transition: stroke-dasharray var(--traag) var(--veer); }
+	.vulling { stroke: var(--k); transition: stroke-dasharray var(--traag) var(--veer); animation: vullen 700ms var(--veer) 80ms both; }
+	/* Bij het openen loopt de ring vol tot waar je staat. */
+	@keyframes vullen { from { stroke-dasharray: 0 var(--omtrek); } }
 	.midden { position: absolute; inset: 0; display: grid; place-items: center; color: var(--k); }
 </style>

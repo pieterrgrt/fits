@@ -1,4 +1,5 @@
 <script>
+	import { verzend } from '#lib/verzend.js';
 	import Icoon from '#lib/Icoon.svelte';
 	import { voor, optellen } from '#lib/voeding.js';
 
@@ -31,7 +32,7 @@
 	<a class="knop stil klein" style="align-self: flex-start" href="/eten/maaltijden"><Icoon naam="terug" grootte={16} /> Mijn maaltijden</a>
 	<header class="paginakop"><h1>Recept maken</h1></header>
 
-	<form method="POST" class="stapel">
+	<form method="POST" class="stapel" use:verzend>
 		<div class="kaart raster twee">
 			<label class="veld"><span>Naam</span><input name="naam" bind:value={naam} placeholder="bv. Pasta kip pesto" required /></label>
 			<label class="veld"><span>Porties</span><input name="porties" inputmode="numeric" bind:value={porties} /></label>

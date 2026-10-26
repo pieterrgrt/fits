@@ -1,5 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { verzend } from '#lib/verzend.js';
 	import { page } from '$app/state';
 	import Icoon from '#lib/Icoon.svelte';
 	let { data, form } = $props();
@@ -50,7 +51,7 @@
 					<div class="rij">
 						<form method="POST" action="?/rol" use:enhance><input type="hidden" name="id" value={g.id} /><input type="hidden" name="rol" value={g.rol === 'beheerder' ? 'lid' : 'beheerder'} /><button class="knop klein omlijnd">{g.rol === 'beheerder' ? 'Maak lid' : 'Maak beheerder'}</button></form>
 						<form method="POST" action="?/uitloggen" use:enhance><input type="hidden" name="id" value={g.id} /><button class="knop klein omlijnd">Overal uitloggen</button></form>
-						<form method="POST" action="?/verwijder" use:enhance onsubmit={(e) => { if (!confirm(`${g.naam} en alle gegevens verwijderen?`)) e.preventDefault(); }}><input type="hidden" name="id" value={g.id} /><button class="knop klein gevaar">Verwijderen</button></form>
+						<form method="POST" action="?/verwijder" use:verzend={{ bevestig: `${g.naam} en alle gegevens verwijderen?` }}><input type="hidden" name="id" value={g.id} /><button class="knop klein gevaar">Verwijderen</button></form>
 					</div>
 				{/if}
 			</article>

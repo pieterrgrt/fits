@@ -4,6 +4,7 @@
 	// als je terugkomt. Hij overleeft ook herladen (bewaard op de telefoon).
 	import { onMount } from 'svelte';
 	import Icoon from '#lib/Icoon.svelte';
+	import { veer, magBewegen } from '#lib/beweging.js';
 
 	let { seconden = $bindable(0), totaal = 90, bereik = '', onklaar } = $props();
 	let einde = $state(0);
@@ -85,10 +86,16 @@
 		tik();
 	};
 	const mm = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+	// In en uit van onderen; de timer staat in het midden (translateX(-50%)), dus fly gaat niet.
+	const schuif = (node, { duration = 240 } = {}) => ({
+		duration: magBewegen() ? duration : 0,
+		easing: veer,
+		css: (t, u) => `transform: translate(-50%, ${u * 24}px) scale(${0.96 + t * 0.04}); opacity: ${t}`
+	});
 </script>
 
 {#if einde && over > 0}
-	<div class="timer" role="timer" aria-live="off">
+	<div class="timer" class:bijna={over <= 5} role="timer" aria-live="off" transition:schuif>
 		<div class="voortgang" style="--f: {1 - over / totaal}"></div>
 		<div class="inhoud">
 			<div class="stapel krap" style="gap: 0">
@@ -116,10 +123,12 @@
 		border: 1px solid var(--lijn-sterk);
 		box-shadow: 0 20px 50px -20px rgb(0 0 0 / 0.8);
 		overflow: hidden;
-		animation: in var(--gewoon) var(--veer);
 	}
 	.voortgang { position: absolute; inset: 0; background: var(--accent-tint); transform-origin: left; transform: scaleX(var(--f)); transition: transform 250ms linear; }
 	.inhoud { position: relative; display: flex; justify-content: space-between; align-items: center; padding: var(--r-3) var(--r-4); }
 	.tijd { font-family: var(--letter-display); font-stretch: var(--breed); font-weight: 800; font-size: var(--maat-2xl); line-height: 1; font-variant-numeric: tabular-nums; }
-	@keyframes in { from { transform: translate(-50%, 20px); opacity: 0; } }
+	.tijd { transition: color var(--gewoon); }
+	/* Laatste seconden: de tijd kleurt volt, zodat je uit je ooghoek ziet dat je weer mag. */
+	.bijna .tijd { color: var(--accent-tekst); }
+	.bijna .voortgang { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 </style>

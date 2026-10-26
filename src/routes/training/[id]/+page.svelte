@@ -12,6 +12,8 @@
 	import { gewichtTekst, repsTekst, getal } from '#lib/gewicht.js';
 	import { mooi } from '#lib/datum.js';
 	import { schijvenPerKant, gebruiktStang } from '#lib/groei.js';
+	import { glijd, magBewegen } from '#lib/beweging.js';
+	import { verzend } from '#lib/verzend.js';
 
 	let { data, form } = $props();
 	let timer;
@@ -20,6 +22,7 @@
 	let vervang = $state(null); // item dat je aan het vervangen bent
 	let afrondFout = $state('');
 	let verstreken = $state('0:00');
+	let vers = $state(''); // "item-nr" van de set die je net opsloeg: die tikt even op
 
 	const items = $derived(data.items.map((it) => ({ ...it, oef: it.slug ? oefening(it.slug) : null })));
 	const volgende = $derived(items.find((it) => it.gedaan.length < (it.sets_tijdelijk ?? it.sets)));
@@ -60,14 +63,30 @@
 		return () => clearInterval(i);
 	});
 
+	// Een oefening openklappen en, als het inklappen van de vorige klaar is, in beeld brengen.
+	// altijd: ook als de kop al zichtbaar is (na de laatste set ga je door naar de volgende oefening).
+	function klap(id, altijd = false) {
+		open = open === id ? null : id;
+		if (open == null) return;
+		setTimeout(() => {
+			const el = document.getElementById(`oefening-${id}`);
+			if (!el) return;
+			const kop = document.querySelector('.kop')?.getBoundingClientRect().bottom ?? 0;
+			const boven = el.getBoundingClientRect().top;
+			if (altijd || boven < kop || boven > innerHeight * 0.6) el.scrollIntoView({ behavior: magBewegen() ? 'smooth' : 'auto', block: 'start' });
+		}, 260);
+	}
 	function rustNa(it, nr) {
 		const [a, b] = it.oef?.rust ?? [60, 60];
 		const laatste = nr >= (it.sets_tijdelijk ?? it.sets);
+		vers = `${it.id}-${nr}`;
+		setTimeout(() => vers === `${it.id}-${nr}` && (vers = ''), 700);
+		navigator.vibrate?.(12);
 		timer?.start(b, a === b ? `${a} sec` : `${a}–${b} sec`);
 		if (laatste) {
 			const i = items.findIndex((x) => x.id === it.id);
 			const nieuw = items.slice(i + 1).find((x) => x.gedaan.length < (x.sets_tijdelijk ?? x.sets));
-			if (nieuw) open = nieuw.id;
+			if (nieuw) klap(nieuw.id, true);
 		}
 	}
 	const schijven = (it) => {
@@ -117,9 +136,9 @@
 		{@const sets = it.sets_tijdelijk ?? it.sets}
 		{@const af = it.gedaan.length >= sets}
 		{@const sec = it.oef?.meet === 'sec'}
-		<section class="kaart oefening" class:af class:open={open === it.id}>
-			<button class="koptekst" onclick={() => (open = open === it.id ? null : it.id)} aria-expanded={open === it.id}>
-				<span class="nummer" class:volt={af}>{#if af}<Icoon naam="vink" grootte={18} />{:else}{n + 1}{/if}</span>
+		<section class="kaart oefening" id="oefening-{it.id}" class:af class:open={open === it.id}>
+			<button class="koptekst" onclick={() => klap(it.id)} aria-expanded={open === it.id}>
+				<span class="nummer" class:volt={af} class:plop={af && vers.startsWith(`${it.id}-`)}>{#if af}<Icoon naam="vink" grootte={18} />{:else}{n + 1}{/if}</span>
 				<span class="stapel krap" style="gap: 2px; text-align: left">
 					<span class="naam">{it.wissel ? 'Wisselslot' : ''}{it.wissel && it.oef ? ' · ' : ''}{it.oef?.naam ?? ''}</span>
 					<span class="klein gedempt">
@@ -128,11 +147,11 @@
 						{#if it.gedaan.length}· {repsTekst(it.gedaan)}{/if}
 					</span>
 				</span>
-				<span class="gedempt"><Icoon naam={open === it.id ? 'min' : 'plus'} grootte={18} /></span>
+				<svg class="klapper gedempt" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /><path class="staand" d="M12 5v14" /></svg>
 			</button>
 
 			{#if open === it.id}
-				<div class="stapel inhoud">
+				<div class="stapel inhoud" transition:glijd>
 					{#if it.wissel && !it.slug}
 						<p class="rustig" style="margin:0">Probeer een nieuw apparaat. Kies er één voor deze week:</p>
 						<div class="raster twee">
@@ -165,7 +184,7 @@
 						</div>
 
 						{#if uitleg[it.id]}
-							<div class="uitleg kaart hoog">
+							<div class="uitleg kaart hoog" transition:glijd>
 								<Figuur anim={it.oef.anim} label={it.oef.naam} />
 								<ol class="klein stappen">{#each it.oef.uitvoering as s}<li>{s}</li>{/each}</ol>
 								<a class="klein" href="/oefeningen/{it.slug}">Alles over {it.oef.kort} →</a>
@@ -205,6 +224,7 @@
 									doelReps={it.doel[nr - 1]}
 									beste={it.beste}
 									standaardGewicht={it.gedaan.find((s) => s.nr === nr - 1)?.gewicht ?? standaard(it)}
+									vers={vers === `${it.id}-${nr}`}
 									onopgeslagen={() => rustNa(it, nr)}
 								/>
 							{/each}
@@ -221,13 +241,13 @@
 
 	<section class="kaart stapel">
 		<h2>Afronden</h2>
-		<form method="POST" action="?/afronden" class="stapel" onsubmit={(e) => {
+		<form method="POST" action="?/afronden" class="stapel" use:verzend={{ voor: () => {
 			if (wachtend || !navigator.onLine) {
-				e.preventDefault();
 				afrondFout = 'Wacht tot je bereik hebt: eerst moeten je sets naar de server. Daarna kun je afronden.';
 				wachtrij.verstuur();
+				return false;
 			}
-		}}>
+		} }}>
 			{#if afrondFout}<p class="melding amber" style="margin:0">{afrondFout}</p>{/if}
 			<label class="veld"><span>Notitie</span><textarea name="notitie" placeholder="Bv. bench bovenkant gehaald → zondag naar 52,5"></textarea></label>
 			<fieldset class="stapel krap tweeuur">
@@ -240,7 +260,7 @@
 			<button class="knop primair groot vol-breed">Training afronden <Icoon naam="vink" /></button>
 		</form>
 		{#if totaalSets === 0}
-			<form method="POST" action="?/stoppen"><button class="knop stil vol-breed">Toch niet trainen</button></form>
+			<form method="POST" action="?/stoppen" use:verzend><button class="knop stil vol-breed">Toch niet trainen</button></form>
 		{/if}
 	</section>
 </main>
@@ -270,8 +290,13 @@
 	.kop .display { font-size: var(--maat-l); }
 	.klok { font-family: var(--letter-display); font-stretch: var(--breed); font-weight: 800; font-size: var(--maat-l); color: var(--accent-tekst); min-width: 3.5rem; text-align: right; }
 	.app { padding-top: var(--r-4); padding-bottom: 8rem; }
-	.oefening { padding: 0; overflow: hidden; }
+	.oefening { padding: 0; overflow: hidden; scroll-margin-top: 5rem; transition: opacity var(--gewoon), border-color var(--gewoon); }
 	.oefening.af:not(.open) { opacity: 0.72; }
+	.oefening.open { border-color: var(--lijn-sterk); }
+	.klapper { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; transition: transform var(--gewoon) var(--veer); }
+	.klapper .staand { transform-box: fill-box; transform-origin: center; transition: transform var(--gewoon) var(--veer); }
+	.open .klapper { transform: rotate(180deg); }
+	.open .klapper .staand { transform: scaleY(0); }
 	.koptekst {
 		all: unset;
 		box-sizing: border-box;
@@ -282,7 +307,9 @@
 		align-items: center;
 		padding: var(--r-4);
 		cursor: pointer;
+		transition: background var(--snel);
 	}
+	.koptekst:active { background: var(--vlak-hoog); }
 	.koptekst:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 	.nummer {
 		width: 2.25rem; height: 2.25rem; border-radius: 50%;
@@ -290,7 +317,10 @@
 		background: var(--vlak-hoog);
 		font-family: var(--letter-display); font-stretch: var(--breed); font-weight: 800;
 	}
+	.nummer { transition: background var(--gewoon), color var(--gewoon); }
 	.nummer.volt { background: var(--accent); color: var(--op-accent); }
+	.nummer.plop { animation: plop 420ms var(--veer); }
+	@keyframes plop { 40% { transform: scale(1.18); } }
 	.naam { font-weight: 700; }
 	.inhoud { padding: 0 var(--r-4) var(--r-4); }
 	.info { align-items: flex-start; }

@@ -5,6 +5,7 @@
 	import Ring from '#lib/Ring.svelte';
 	import { mooi, plusDagen, DAGEN, weekdag } from '#lib/datum.js';
 	import { getal } from '#lib/gewicht.js';
+	import { glijd } from '#lib/beweging.js';
 
 	let { data, form } = $props();
 	const d = $derived(data.doelen);
@@ -91,7 +92,7 @@
 			{#if m.regels.length}
 				<ul class="lijst regels">
 					{#each m.regels as r (r.id)}
-						<li>
+						<li transition:glijd>
 							<a class="stapel krap regel-link" style="gap: 0" href={r.product_id ? `/eten/product/${encodeURIComponent(r.product_id)}?maaltijd=${m.id}&datum=${data.datum}` : undefined}>
 								<span class="naam">{r.naam}</span>
 								<span class="klein gedempt">{r.portie ?? (r.product_id ? `${getal(r.hoeveelheid)} g` : 'snel toegevoegd')}</span>
@@ -191,8 +192,14 @@
 	.weg { width: 2rem; min-height: 2rem; color: var(--tekst-gedempt); }
 	.acties:empty { display: none; }
 	.glazen { display: grid; grid-template-columns: repeat(auto-fill, minmax(1.75rem, 1fr)); gap: var(--r-1); }
-	.glas { height: 2.25rem; border-radius: 4px 4px 8px 8px; border: 2px solid var(--lijn-sterk); }
-	.glas.vol { background: color-mix(in srgb, var(--water) 70%, transparent); border-color: var(--water); }
+	.glas {
+		height: 2.25rem; border-radius: 4px 4px 8px 8px; border: 2px solid var(--lijn-sterk);
+		/* Het glas loopt van onderen vol. */
+		background: linear-gradient(to top, color-mix(in srgb, var(--water) 70%, transparent) 50%, transparent 50%) bottom / 100% 200% no-repeat;
+		background-position: top;
+		transition: background-position var(--traag) var(--veer), border-color var(--gewoon);
+	}
+	.glas.vol { background-position: bottom; border-color: var(--water); }
 	.water-knop { --knop-vlak: color-mix(in srgb, var(--water) 18%, var(--vlak-hoog)); }
 	.momenten { gap: var(--r-1); flex-wrap: wrap; }
 	.moment {
@@ -200,6 +207,7 @@
 		font-size: var(--maat-xs); font-weight: 700; color: var(--tekst-gedempt);
 		box-shadow: inset 0 0 0 1.5px var(--lijn-sterk);
 	}
+	.moment { transition: background var(--gewoon), color var(--gewoon), box-shadow var(--gewoon); }
 	.moment.raak { background: var(--amber); color: var(--achtergrond); box-shadow: none; }
 	.eiwitraak { color: var(--amber); font-weight: 650; }
 </style>

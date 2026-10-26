@@ -43,6 +43,9 @@ Basis: ijzergrijzen (`--ijzer-0` t/m `5`) en krijtwit (`--krijt-1` t/m `3`). Com
 - Hoeken: `--hoek-s` 6, `-m` 12, `-l` 20 (kaarten), `-rond` (knoppen, chips).
 - Aanraakvlakken minstens 44 px; de reps-stepper en de set-knop zijn 46 px hoog.
 - Beweging: 120 / 200 / 360 ms, curve `--veer`. Bij *liever geen beweging* staat alles stil en tonen figuren begin- en eindstand tegelijk.
+- Pagina-overgangen via de View Transitions API (`src/routes/+layout.svelte`, stijl onderin `fits.css`): dieper of een tab naar rechts schuift de nieuwe pagina van rechts in, terug van links, een andere dag in Eten ook. Bovenbalk en tabbalk blijven staan; het pilletje in de tabbalk schuift naar de gekozen tab. Duurt het laden even, dan loopt bovenin een volt laadbalk.
+- Binnen een pagina: `src/lib/beweging.js` (`glijd`, `verschijn`, `vervaag`, `paneel`) voor uitklappen, panelen en lijstregels; meldingen, balken en ringen bewegen vanzelf in.
+- Formulieren die doorverwijzen gebruiken `use:verzend` (`src/lib/verzend.js`): geen herlaadflits, een draaiertje in de knop, en `bevestig` vraagt eerst. Gebruik geen `onsubmit` met `preventDefault` naast `use:enhance`: enhance verstuurt dan toch.
 
 ## Onderdelen
 

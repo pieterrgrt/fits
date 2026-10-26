@@ -1,4 +1,5 @@
 <script>
+	import { verzend } from '#lib/verzend.js';
 	import Icoon from '#lib/Icoon.svelte';
 	let { data, form } = $props();
 	const v = (k, s = '') => form?.[k] ?? s;
@@ -12,7 +13,7 @@
 		<p class="rustig">Neem de waarden over van het etiket, kolom "per 100 g" of "per 100 ml".</p>
 	</header>
 
-	<form method="POST" class="kaart raster twee">
+	<form method="POST" class="kaart raster twee" use:verzend>
 		<input type="hidden" name="barcode" value={data.barcode} />
 		<label class="veld" style="grid-column: 1 / -1"><span>Naam</span><input name="naam" required value={v('naam', data.naam)} /></label>
 		<label class="veld"><span>Merk</span><input name="merk" value={v('merk')} /></label>

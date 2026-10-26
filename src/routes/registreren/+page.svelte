@@ -1,5 +1,5 @@
 <script>
-	import { enhance } from '$app/forms';
+	import { verzend } from '#lib/verzend.js';
 	import Beeldmerk from '#lib/Beeldmerk.svelte';
 	let { data, form } = $props();
 </script>
@@ -12,7 +12,7 @@
 			{#if data.eerste}Je bent de eerste. Jouw account wordt beheerder; anderen kun je later uitnodigen.{:else}Met een uitnodigingscode van de beheerder.{/if}
 		</p>
 	</div>
-	<form method="POST" class="kaart stapel" use:enhance>
+	<form method="POST" class="kaart stapel" use:verzend>
 		{#if form?.fout}<p class="melding fout" role="alert">{form.fout}</p>{/if}
 		<label class="veld"><span>Naam</span><input name="naam" autocomplete="name" required value={form?.naam ?? ''} /></label>
 		<label class="veld"><span>E-mail</span><input name="email" type="email" autocomplete="email" required value={form?.email ?? ''} /></label>
