@@ -1,9 +1,9 @@
 /*
-  Hardloopsporen: GPX/TCX importeren (upload of een map op de server, ook de Strava-export),
+  Hardloopsporen: GPX/TCX/FIT importeren (upload of een map op de server, ook de Strava-export),
   opslaan als vereenvoudigde lijn en koppelen aan een cardio-activiteit.
 
   Ruwe bestanden staan in FITS_SPOREN (standaard <FITS_DATA>/sporen):
-    uploads/<gebruiker>/<hash>.gpx|.tcx   wat je via de app uploadt (uitgepakt), om later opnieuw te verwerken
+    uploads/<gebruiker>/<hash>.gpx|.tcx|.fit  wat je via de app uploadt (uitgepakt), om later opnieuw te verwerken
     al het andere                          wordt ingelezen met "Map importeren" (Strava-export: activities/ + activities.csv)
 */
 import fs from 'node:fs';
@@ -12,7 +12,7 @@ import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import { FITS_SPOREN } from '$app/env/private';
 import { map, een, alle, doe, transactie } from './db.js';
-import { lees, samenvatting, vereenvoudig, codeer, decodeer, lokaal, stravaIndex, sleutelVan } from '#lib/spoor.js';
+import { lees, leesFit, isFit, samenvatting, vereenvoudig, codeer, decodeer, lokaal, stravaIndex, sleutelVan } from '#lib/spoor.js';
 
 export const sporenMap = FITS_SPOREN ?? path.join(map, 'sporen');
 const uploadMap = (gebruikerId) => path.join(sporenMap, 'uploads', String(gebruikerId));
@@ -28,7 +28,7 @@ function uitpakken(buf, bestand) {
 		return { fout: 'Kon het bestand niet uitpakken.' };
 	}
 	if (buf.length > MAX_GROOTTE) return { fout: 'Te groot.' };
-	if (/\.fit$/i.test(bestand.replace(/\.gz$/i, '')) || buf.subarray(8, 12).toString() === '.FIT') return { fout: 'FIT-bestanden kan Fits nog niet lezen.', fit: true };
+	if (isFit(buf)) return { buf, fit: true };
 	return { buf, tekst: buf.toString('utf8') };
 }
 
@@ -43,17 +43,17 @@ function zelfdeActiviteit(gebruikerId, begin) {
 
 /**
  * Importeert één bestand.
- * @returns {{ status: 'nieuw', id: number } | { status: 'dubbel' } | { status: 'fout', fout: string, fit?: boolean }}
+ * @returns {{ status: 'nieuw', id: number } | { status: 'dubbel' } | { status: 'fout', fout: string, zonderGps?: boolean }}
  */
 export function importeer(gebruikerId, ruw, bestand, { bron = 'upload', naam = null, soort = null, bewaren = bron === 'upload' } = {}) {
 	const u = uitpakken(ruw, bestand);
-	if (u.fout) return { status: 'fout', fout: u.fout, fit: u.fit };
+	if (u.fout) return { status: 'fout', fout: u.fout };
 	const hash = crypto.createHash('sha256').update(u.buf).digest('hex');
 	if (een('SELECT 1 FROM sporen WHERE gebruiker_id = ? AND hash = ?', gebruikerId, hash)) return { status: 'dubbel' };
 
-	const s = lees(u.tekst);
+	const s = u.fit ? leesFit(u.buf) : lees(u.tekst);
 	if (s.fout) return { status: 'fout', fout: s.fout };
-	if (s.punten.length < 2) return { status: 'fout', fout: 'Geen GPS-punten in dit bestand.' };
+	if (s.punten.length < 2) return { status: 'fout', fout: 'Geen GPS-punten in dit bestand.', zonderGps: true };
 	const sam = samenvatting(s.punten);
 	const lijn = codeer(vereenvoudig(s.punten, 5));
 	const begin = sam.begin != null ? lokaal(sam.begin) : null;
@@ -62,7 +62,7 @@ export function importeer(gebruikerId, ruw, bestand, { bron = 'upload', naam = n
 
 	if (bewaren) {
 		fs.mkdirSync(uploadMap(gebruikerId), { recursive: true });
-		const ext = u.tekst.slice(0, 2000).includes('TrainingCenterDatabase') ? 'tcx' : 'gpx';
+		const ext = u.fit ? 'fit' : u.tekst.slice(0, 2000).includes('TrainingCenterDatabase') ? 'tcx' : 'gpx';
 		fs.writeFileSync(path.join(uploadMap(gebruikerId), `${hash}.${ext}`), u.buf);
 	}
 
@@ -89,11 +89,11 @@ export function importeer(gebruikerId, ruw, bestand, { bron = 'upload', naam = n
 	return { status: 'nieuw', id: Number(id) };
 }
 
-const telling = () => ({ nieuw: 0, dubbel: 0, fit: 0, fout: 0, fouten: [] });
+const telling = () => ({ nieuw: 0, dubbel: 0, zonderGps: 0, fout: 0, fouten: [] });
 function tel(t, bestand, r) {
 	if (r.status === 'nieuw') t.nieuw++;
 	else if (r.status === 'dubbel') t.dubbel++;
-	else if (r.fit) t.fit++;
+	else if (r.zonderGps) t.zonderGps++; // loopband, zwembad: geen spoor, geen fout
 	else {
 		t.fout++;
 		if (t.fouten.length < 10) t.fouten.push(`${path.basename(bestand)}: ${r.fout}`);
@@ -163,7 +163,7 @@ export function verwijder(gebruikerId, id) {
 			doe('DELETE FROM activiteiten WHERE id = ? AND gebruiker_id = ?', s.activiteit_id, gebruikerId);
 		}
 	});
-	for (const ext of ['gpx', 'tcx']) fs.rmSync(path.join(uploadMap(gebruikerId), `${s.hash}.${ext}`), { force: true });
+	for (const ext of ['gpx', 'tcx', 'fit']) fs.rmSync(path.join(uploadMap(gebruikerId), `${s.hash}.${ext}`), { force: true });
 }
 
 /** Bij het verwijderen van een account: geüploade bestanden weg (de rijen gaan mee met de gebruiker). */

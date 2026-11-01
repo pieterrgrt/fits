@@ -4,9 +4,9 @@ Op **Meer → Hardlopen** staan je loopjes als sporen (GPS). Plan en fasen: `SPE
 
 ## Loopjes importeren
 
-- **Uploaden:** kies een of meer GPX- of TCX-bestanden (ook `.gpx.gz` / `.tcx.gz`). De browser pakt ze in en stuurt ze in porties van hooguit 1,5 MB (nginx laat 2 MB per verzoek door). Hetzelfde bestand twee keer importeren doet niets. Startte er binnen 2 minuten al een Strava-activiteit, dan hoort het spoor daarbij; anders maakt Fits een cardio-activiteit, zodat het loopje ook op Cardio meetelt.
+- **Uploaden:** kies een of meer GPX-, TCX- of FIT-bestanden (ook `.gz`, zoals in de Strava-export). De browser pakt ze in en stuurt ze in porties van hooguit 1,5 MB (nginx laat 2 MB per verzoek door). Hetzelfde bestand twee keer importeren doet niets. Startte er binnen 2 minuten al een Strava-activiteit, dan hoort het spoor daarbij; anders maakt Fits een cardio-activiteit, zodat het loopje ook op Cardio meetelt.
 - **Map importeren (beheerder):** leest alles in `FITS_SPOREN` (standaard `<FITS_DATA>/sporen`) in je eigen account in, behalve `uploads/`. Een uitgepakte Strava-export werkt zoals hij is: naam en soort komen uit `activities.csv`.
-- FIT-bestanden (`.fit.gz`, van horloges) slaat Fits nog over.
+- Bestanden zonder GPS (loopband, binnen) slaat Fits over; ze tellen niet als fout.
 
 ## Strava-export
 
@@ -14,7 +14,7 @@ Op **Meer → Hardlopen** staan je loopjes als sporen (GPS). Plan en fasen: `SPE
 2. Je hebt alleen `activities/` en `activities.csv` nodig; de rest (foto's, media) mag weg. Dat scheelt meestal het meeste.
 3. Zet die twee in de map `FITS_SPOREN` op de server en klik **Map importeren**.
 
-Geüploade bestanden bewaart Fits (uitgepakt) in `FITS_SPOREN/uploads/<gebruiker>/`, zodat ze later opnieuw verwerkt kunnen worden.
+Geüploade bestanden (GPX, TCX, FIT) bewaart Fits (uitgepakt) in `FITS_SPOREN/uploads/<gebruiker>/`, zodat ze later opnieuw verwerkt kunnen worden.
 
 ## Kaart
 

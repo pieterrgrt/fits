@@ -22,7 +22,7 @@ docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/app -w /app fits-
   - `src/lib/server/sporen.js`: importeren (upload, .gz, dubbel via hash, koppelen aan bestaande Strava-activiteit binnen 2 min), map importeren, verwijderen
   - `/hardlopen` (via Meer): uploaden, map importeren (beheerder), lijst met vorm, totalen; sporen in de export; weg bij account verwijderen
   - end-to-end getest in de gebouwde app (upload, dubbel, kapot bestand, .gz, map met activities.csv, FIT overgeslagen, verwijderen, export)
-- [ ] FIT-bestanden lezen
+- [x] FIT-bestanden lezen (2026-11-01): `leesFit` in `src/lib/spoor.js` (eigen lezer, geen afhankelijkheid; beide bytevolgorden, samengedrukte tijdkop, ontwikkelaarsvelden, aaneengeschakelde bestanden), tests `tests/fit.test.js`; end-to-end getest (map met activities.csv + `.fit.gz`, upload `.fit`, dubbel). Bestanden zonder GPS (loopband) tellen apart als "zonder GPS", niet als fout.
 - [x] Fase 2 — kaart (Leaflet + OSM-tegels, donker/licht): `/hardlopen/kaart`, loopje-detail `/hardlopen/[id]`
 - [x] Fase 3 — straten die je kent: OSM via Overpass (cellen ~2 × 2 km, migratie 6), sporen op straten (`src/lib/hardlopen/netwerk.js`, `src/lib/server/straten.js`), dekking en nieuwe straten per loopje
 - [x] Fase 4 — ontdekrondjes: eigen routering (A*) op het OSM-netwerk in plaats van BRouter, `/hardlopen/rondje`, GPX

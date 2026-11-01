@@ -13,7 +13,7 @@ Veel verschillende hardlooproutes leren en vinden. De kern is een **ontdekmodus*
 - **docker-compose.yml en Dockerfile blijven ongemoeid** (CLAUDE.md). BRouter draaien als extra compose-service is een voorstel voor Pieter; tot hij dat vraagt beschrijft `docs/hardlopen.md` hoe je BRouter los start.
 - **Migraties alleen toevoegend** (nieuwe tabellen en kolommen), zodat een oudere versie van de app met de nieuwe database blijft werken.
 - **Werk op branch `hardlopen`.** Niets op `main`: een push naar main zet de app live.
-- **Geen zware afhankelijkheden waar het niet hoeft.** GPX/TCX lezen, afstanden, vereenvoudigen en polylines zijn klein genoeg om zelf te doen (en te testen). Voor de kaart komt er wél een bibliotheek (fase 2).
+- **Geen zware afhankelijkheden waar het niet hoeft.** GPX/TCX/FIT lezen, afstanden, vereenvoudigen en polylines zijn klein genoeg om zelf te doen (en te testen). Voor de kaart komt er wél een bibliotheek (fase 2).
 
 ## Fasen
 
@@ -47,5 +47,5 @@ Sporen in Fits krijgen.
 ## Open vragen voor Pieter
 1. ~~BRouter~~ — niet nodig gebleken (zie Uitgangspunten).
 2. Startpunt: vaste thuislocatie in je account bewaren, of elke keer kiezen?
-3. FIT-bestanden (horloges) ook lezen? Strava-exports bevatten vaak `.fit.gz`. Gepland na fase 1.
+3. ~~FIT-bestanden~~ — Fits leest ze (2026-11-01).
 4. Mag de kaart OSM-tegels van openstreetmap.org gebruiken (prima voor persoonlijk gebruik), of liever een eigen tegelbron?
