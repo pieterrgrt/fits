@@ -9,6 +9,7 @@
 		{ href: '/oefeningen', icoon: 'oefeningen', naam: 'Oefeningen', uitleg: 'Alle oefeningen met uitleg en animatie' },
 		{ href: '/voeding', icoon: 'slaap', naam: 'Overzicht eten en slaap', uitleg: 'Weken, gewicht, slaapfasen' },
 		{ href: '/gezondheid', icoon: 'slaap', naam: 'Apple Gezondheid', uitleg: 'Slaap (en gewicht) van je iPhone' },
+		{ href: '/hardlopen', icoon: 'route', naam: 'Hardlopen', uitleg: 'Je loopjes en routes, GPX importeren' },
 		{ href: '/cardio', icoon: 'cardio', naam: 'Cardio', uitleg: 'Hardlopen, zwemmen, zone 2' },
 		{ href: '/uitleg', icoon: 'uitleg', naam: 'Hoe het werkt', uitleg: 'Dubbele progressie, rust, RIR' },
 		{ href: '/account', icoon: 'account', naam: 'Account', uitleg: 'Wachtwoord, apparaten, Strava, export' },

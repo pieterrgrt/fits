@@ -289,6 +289,30 @@ const MIGRATIES = [
 	CREATE INDEX fotos_datum ON fotos (gebruiker_id, datum);
 
 	ALTER TABLE gebruikers ADD COLUMN stang REAL;            -- gewicht van je halterstang, leeg = 20 kg
+	`,
+	// 5: hardlopen: sporen (GPS) uit GPX/TCX, uploads en de Strava-export. Alleen toevoegend.
+	`
+	CREATE TABLE sporen (
+		id INTEGER PRIMARY KEY,
+		gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id) ON DELETE CASCADE,
+		activiteit_id TEXT REFERENCES activiteiten(id) ON DELETE SET NULL,  -- de cardio-activiteit bij dit spoor
+		hash TEXT NOT NULL,                          -- sha256 van het (uitgepakte) bestand: twee keer importeren doet niets
+		bron TEXT NOT NULL,                          -- 'upload' of 'map'
+		bestand TEXT,                                -- oorspronkelijke bestandsnaam
+		soort TEXT NOT NULL DEFAULT 'Run',           -- zoals activiteiten.soort
+		naam TEXT,
+		begin TEXT,                                  -- lokale tijd YYYY-MM-DDTHH:MM:SS, leeg als het bestand geen tijden heeft
+		datum TEXT,
+		afstand REAL,                                -- meter
+		duur INTEGER,                                -- sec, van begin tot eind
+		bewegend INTEGER,                            -- sec
+		punten INTEGER NOT NULL,                     -- aantal GPS-punten in het bestand
+		lijn TEXT NOT NULL,                          -- vereenvoudigde lijn (polyline, ~5 m)
+		zuid REAL, west REAL, noord REAL, oost REAL,
+		gemaakt TEXT NOT NULL DEFAULT (datetime('now')),
+		UNIQUE (gebruiker_id, hash)
+	);
+	CREATE INDEX sporen_datum ON sporen (gebruiker_id, datum);
 	`
 ];
 

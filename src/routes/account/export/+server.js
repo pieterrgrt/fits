@@ -17,7 +17,9 @@ export const GET = ({ locals }) => {
 		vasten: alle('SELECT begin, eind, doel_uren FROM vasten WHERE gebruiker_id = ? ORDER BY begin', g),
 		weekregels: alle('SELECT week, slaap, energie, gewicht, gemist, notitie FROM weekregels WHERE gebruiker_id = ? ORDER BY week', g),
 		doelen: alle('SELECT soort, slug, gewicht, reps, aantal, tekst, start, deadline, behaald FROM doelen WHERE gebruiker_id = ?', g),
-		activiteiten: alle('SELECT id, soort, naam, datum, begin, duur, afstand, hartslag, hoogte FROM activiteiten WHERE gebruiker_id = ? ORDER BY begin', g)
+		activiteiten: alle('SELECT id, soort, naam, datum, begin, duur, afstand, hartslag, hoogte FROM activiteiten WHERE gebruiker_id = ? ORDER BY begin', g),
+		// lijn: vereenvoudigde route als polyline (precisie 5)
+		sporen: alle('SELECT activiteit_id, bestand, soort, naam, begin, afstand, duur, bewegend, punten, lijn FROM sporen WHERE gebruiker_id = ? ORDER BY begin', g)
 	};
 	return new Response(JSON.stringify(inhoud, null, 2), {
 		headers: { 'content-type': 'application/json', 'content-disposition': `attachment; filename="fits-${vandaag()}.json"` }
