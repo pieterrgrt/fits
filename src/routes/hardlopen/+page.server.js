@@ -33,7 +33,7 @@ export const actions = {
 	upload: async ({ request, locals }) => {
 		const f = await request.formData();
 		const bestanden = f.getAll('bestanden').filter((b) => b instanceof File && b.size);
-		if (!bestanden.length) return fail(400, { fout: 'Kies een of meer GPX- of TCX-bestanden.' });
+		if (!bestanden.length) return fail(400, { fout: 'Kies een of meer GPX-, TCX- of FIT-bestanden.' });
 		if (bestanden.length > MAX_BESTANDEN) return fail(400, { fout: `Hooguit ${MAX_BESTANDEN} bestanden tegelijk.` });
 		const lijst = [];
 		for (const b of bestanden) lijst.push({ naam: b.name, buf: Buffer.from(await b.arrayBuffer()) });

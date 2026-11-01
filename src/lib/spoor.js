@@ -82,6 +82,89 @@ export function lees(tekst) {
 	return { fout: 'Geen GPX- of TCX-bestand.' };
 }
 
+// --- FIT (binair formaat van Garmin en andere horloges; ook in de Strava-export als .fit.gz) ---
+
+const FIT_EPOCH = 631065600000; // 1989-12-31T00:00:00Z in ms
+const SEMICIRKEL = 180 / 2 ** 31;
+// FIT-sport (session/sport, veld sport) → soort zoals Strava die noemt
+const FIT_SOORT = { 1: 'Run', 2: 'Ride', 5: 'Swim', 11: 'Walk', 17: 'Hike' };
+
+/** Is dit een FIT-bestand? (".FIT" op byte 8–11) */
+export const isFit = (bytes) => bytes.length >= 12 && bytes[8] === 0x2e && bytes[9] === 0x46 && bytes[10] === 0x49 && bytes[11] === 0x54;
+
+/**
+ * Leest de GPS-punten (record: tijd, positie) en de sport uit een FIT-bestand.
+ * Alleen wat Fits nodig heeft; onbekende berichten en velden worden overgeslagen. Ook aaneengeschakelde bestanden.
+ * @param {Uint8Array} bytes
+ */
+export function leesFit(bytes) {
+	if (!isFit(bytes)) return { fout: 'Geen FIT-bestand.' };
+	const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+	const punten = [];
+	let soort = null;
+	let start = 0;
+	try {
+		while (start + 12 <= bytes.length && isFit(bytes.subarray(start))) {
+			const kop = bytes[start];
+			const eind = start + kop + dv.getUint32(start + 4, true);
+			if (eind > bytes.length) throw new Error('afgekapt');
+			const defs = [];
+			let i = start + kop, laatsteTijd = null;
+			while (i < eind) {
+				const h = bytes[i++];
+				let def, tijd = null;
+				if (h & 0x80) {
+					// Samengedrukte tijdkop: tijd = laatste tijd met 5 bits verschuiving
+					def = defs[(h >> 5) & 3];
+					const off = h & 0x1f;
+					if (laatsteTijd != null) {
+						tijd = (laatsteTijd & ~0x1f) + off + (off < (laatsteTijd & 0x1f) ? 0x20 : 0);
+						laatsteTijd = tijd;
+					}
+				} else if (h & 0x40) {
+					// Definitie
+					const groot = bytes[i + 1] === 1;
+					const globaal = dv.getUint16(i + 2, !groot);
+					const n = bytes[i + 4];
+					i += 5;
+					const velden = [];
+					for (let k = 0; k < n; k++, i += 3) velden.push({ nr: bytes[i], maat: bytes[i + 1] });
+					if (h & 0x20) {
+						const nd = bytes[i++];
+						for (let k = 0; k < nd; k++, i += 3) velden.push({ nr: -1, maat: bytes[i + 1] });
+					}
+					defs[h & 0x0f] = { globaal, klein: !groot, velden };
+					continue;
+				} else def = defs[h & 0x0f];
+				if (!def) throw new Error('bericht zonder definitie');
+				let lat = null, lon = null;
+				for (const v of def.velden) {
+					if (v.maat === 4 && v.nr >= 0) {
+						if (v.nr === 253) {
+							const t = dv.getUint32(i, def.klein);
+							if (t !== 0xffffffff) tijd = laatsteTijd = t;
+						} else if (def.globaal === 20 && (v.nr === 0 || v.nr === 1)) {
+							const w = dv.getInt32(i, def.klein);
+							if (w !== 0x7fffffff) v.nr === 0 ? (lat = w * SEMICIRKEL) : (lon = w * SEMICIRKEL);
+						}
+					} else if (v.maat === 1 && v.nr === (def.globaal === 18 ? 5 : def.globaal === 12 ? 0 : -2)) {
+						soort ??= FIT_SOORT[bytes[i]] ?? null;
+					}
+					i += v.maat;
+				}
+				if (def.globaal === 20 && lat != null && lon != null) {
+					const p = { lat, lon, tijd: tijd != null ? FIT_EPOCH + tijd * 1000 : null };
+					if (geldig(p)) punten.push(p);
+				}
+			}
+			start = eind + 2; // CRC
+		}
+	} catch {
+		if (!punten.length) return { fout: 'Kon het FIT-bestand niet lezen.' };
+	}
+	return { naam: null, soort, punten };
+}
+
 // --- afstand, tijd, samenvatting ---
 
 export function afstand(punten) {

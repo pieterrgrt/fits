@@ -51,7 +51,7 @@
 		const bestanden = [...e.currentTarget.bestanden.files];
 		if (!bestanden.length) return;
 		bezig = true;
-		const totaal = { nieuw: 0, dubbel: 0, fit: 0, fout: 0, fouten: [] };
+		const totaal = { nieuw: 0, dubbel: 0, zonderGps: 0, fout: 0, fouten: [] };
 		let straten = null, foutmelding = null;
 		try {
 			let portie = [], grootte = 0;
@@ -61,7 +61,7 @@
 				for (const f of portie) fd.append('bestanden', f);
 				const r = deserialize(await (await fetch('?/upload', { method: 'POST', body: fd, headers: { 'x-sveltekit-action': 'true' } })).text());
 				if (r.type === 'success') {
-					for (const k of ['nieuw', 'dubbel', 'fit', 'fout']) totaal[k] += r.data.import[k];
+					for (const k of ['nieuw', 'dubbel', 'zonderGps', 'fout']) totaal[k] += r.data.import[k];
 					totaal.fouten.push(...r.data.import.fouten);
 					straten = r.data.straten ?? straten;
 				} else if (r.type === 'failure') foutmelding = r.data?.fout;
@@ -134,9 +134,9 @@
 	<details class="kaart toevoegen" open={!data.sporen.length || !!form?.fout}>
 		<summary class="rij uiteen"><strong>Loopjes importeren</strong><Icoon naam="plus" grootte={18} /></summary>
 		<form method="POST" action="?/upload" enctype="multipart/form-data" class="stapel" onsubmit={upload}>
-			<label class="veld"><span>GPX- of TCX-bestanden</span>
-				<input type="file" name="bestanden" multiple accept=".gpx,.tcx,.gz,application/gpx+xml" required />
-				<small>Ook .gpx.gz en .tcx.gz uit de Strava-export. Hetzelfde bestand twee keer doet niets.</small>
+			<label class="veld"><span>GPX-, TCX- of FIT-bestanden</span>
+				<input type="file" name="bestanden" multiple accept=".gpx,.tcx,.fit,.gz,application/gpx+xml" required />
+				<small>Ook .gz uit de Strava-export. Hetzelfde bestand twee keer doet niets.</small>
 			</label>
 			<button class="knop primair" disabled={bezig}>{voortgang ? `Bezig… ${voortgang}` : bezig ? 'Bezig…' : 'Importeren'}</button>
 		</form>
@@ -152,7 +152,7 @@
 	{#if form?.import}
 		{@const t = form.import}
 		<p class="melding">
-			<strong>{t.nieuw} nieuw</strong>{t.dubbel ? ` · ${t.dubbel} had je al` : ''}{t.fit ? ` · ${t.fit} FIT-bestanden overgeslagen (komt later)` : ''}{t.fout ? ` · ${t.fout} niet gelukt` : ''}
+			<strong>{t.nieuw} nieuw</strong>{t.dubbel ? ` · ${t.dubbel} had je al` : ''}{t.zonderGps ? ` · ${t.zonderGps} zonder GPS (loopband, binnen) overgeslagen` : ''}{t.fout ? ` · ${t.fout} niet gelukt` : ''}
 			{#each t.fouten as f}<br /><span class="klein">{f}</span>{/each}
 			{#if form.straten?.fout}<br /><span class="klein">Straten: {form.straten.fout}</span>{/if}
 		</p>
