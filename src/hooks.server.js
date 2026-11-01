@@ -22,7 +22,7 @@ export async function handle({ event, resolve }) {
 	antwoord.headers.set('X-Frame-Options', 'DENY');
 	antwoord.headers.set('X-Content-Type-Options', 'nosniff');
 	antwoord.headers.set('Referrer-Policy', 'same-origin');
-	// Camera alleen voor Fits zelf (barcode scannen).
-	antwoord.headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+	// Camera (barcode scannen) en locatie (startpunt van een rondje) alleen voor Fits zelf.
+	antwoord.headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(self)');
 	return antwoord;
 }

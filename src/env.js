@@ -14,6 +14,14 @@ export const variables = defineEnvVars({
 		description: 'Adres van Open Food Facts. Standaard https://nl.openfoodfacts.org (Nederlandse producten).',
 		schema: (v) => v || undefined
 	},
+	FITS_SPOREN: {
+		description: 'Map met ruwe loopbestanden (GPX/TCX, Strava-export). Standaard <FITS_DATA>/sporen.',
+		schema: (v) => v || undefined
+	},
+	OVERPASS_URL: {
+		description: 'Overpass-server voor het wegennet (OpenStreetMap). Leeg = overpass-api.de, met een mirror als reserve.',
+		schema: (v) => v || undefined
+	},
 	STRAVA_CLIENT_SECRET: {
 		description: 'Client secret van dezelfde Strava-applicatie.',
 		schema: (v) => v || undefined

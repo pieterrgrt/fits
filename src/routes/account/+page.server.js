@@ -1,4 +1,5 @@
 import { verwijderAlles } from '#lib/server/fotos.js';
+import * as sporen from '#lib/server/sporen.js';
 import { fail, redirect } from '@sveltejs/kit';
 import { een, alle, doe, transactie } from '#lib/server/db.js';
 import { COOKIE, klopt, hash, wachtwoordProbleem, sessiesVan, stopSessie } from '#lib/server/auth.js';
@@ -76,6 +77,7 @@ export const actions = {
 		await ontkoppel(locals.gebruiker.id);
 		doe('DELETE FROM gebruikers WHERE id = ?', locals.gebruiker.id);
 		verwijderAlles(locals.gebruiker.id);
+		sporen.verwijderAlles(locals.gebruiker.id);
 		stopSessie(cookies.get(COOKIE));
 		cookies.delete(COOKIE, { path: '/' });
 		redirect(303, '/inloggen');
