@@ -313,6 +313,52 @@ const MIGRATIES = [
 		UNIQUE (gebruiker_id, hash)
 	);
 	CREATE INDEX sporen_datum ON sporen (gebruiker_id, datum);
+	`,
+	// 6: hardlopen: wegennet uit OpenStreetMap (cache), welke straatstukken je liep, bewaarde routes. Alleen toevoegend.
+	`
+	CREATE TABLE osm_cellen (
+		cel TEXT PRIMARY KEY,                        -- vak van 0,02° × 0,03° (~2 × 2 km), 'i:j'
+		opgehaald TEXT NOT NULL DEFAULT (datetime('now')),
+		wegen INTEGER
+	);
+	CREATE TABLE osm_wegen (
+		id INTEGER PRIMARY KEY,                      -- OSM way-id
+		naam TEXT,
+		soort TEXT NOT NULL,                         -- highway=…
+		straat INTEGER NOT NULL,                     -- 1 = telt mee voor je dekking (geen stoep, oversteek, trap)
+		knopen TEXT NOT NULL,                        -- JSON: OSM node-id's
+		lijn TEXT NOT NULL,                          -- polyline, één punt per knoop
+		lengte REAL NOT NULL                         -- meter
+	);
+	CREATE TABLE osm_weg_cel (
+		cel TEXT NOT NULL,
+		weg_id INTEGER NOT NULL,
+		PRIMARY KEY (cel, weg_id)
+	) WITHOUT ROWID;
+	CREATE INDEX osm_weg_cel_weg ON osm_weg_cel (weg_id);
+
+	CREATE TABLE gelopen (
+		gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id) ON DELETE CASCADE,
+		weg_id INTEGER NOT NULL,
+		seg INTEGER NOT NULL,                        -- stuk tussen knoop seg en seg + 1
+		lengte REAL NOT NULL,
+		spoor_id INTEGER REFERENCES sporen(id) ON DELETE CASCADE,  -- het eerste loopje over dit stuk
+		datum TEXT,
+		PRIMARY KEY (gebruiker_id, weg_id, seg)
+	) WITHOUT ROWID;
+	CREATE INDEX gelopen_spoor ON gelopen (spoor_id);
+	ALTER TABLE sporen ADD COLUMN gematcht INTEGER NOT NULL DEFAULT 0;  -- 1 = op straten gelegd, 2 = te groot
+
+	CREATE TABLE routes (
+		id INTEGER PRIMARY KEY,
+		gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id) ON DELETE CASCADE,
+		naam TEXT NOT NULL,
+		lijn TEXT NOT NULL,                          -- polyline
+		afstand REAL NOT NULL,                       -- meter
+		nieuw REAL,                                  -- meter nieuw toen je hem maakte
+		lat REAL, lon REAL,                          -- start
+		gemaakt TEXT NOT NULL DEFAULT (datetime('now'))
+	);
 	`
 ];
 

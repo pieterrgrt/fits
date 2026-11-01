@@ -9,7 +9,7 @@ Veel verschillende hardlooproutes leren en vinden. De kern is een **ontdekmodus*
 ## Uitgangspunten
 
 - **Eigen server, eigen data.** Sporen staan in de SQLite-database van Fits. Ruwe bestanden (GPX/TCX/FIT, Strava-export) staan in een instelbare map: `FITS_SPOREN`, standaard `<FITS_DATA>/sporen`.
-- **Routing met BRouter, zelf gehost.** Fits praat met BRouter via `BROUTER_URL`. De HTTP-server van BRouter kent geen round trip, dus Fits maakt de rondjes zelf: het kiest tussenpunten en laat BRouter de stukken ertussen routeren. Zonder `BROUTER_URL` staat de routegenerator uit (zoals Strava uit staat zonder sleutels).
+- **Routing: eigen A* over het OSM-wegennet** (gewijzigd op 2026-11-01; eerst was het plan BRouter). Fits haalt voor de dekking toch al het wegennet op; daarover routeren is snel genoeg (< 1 s voor een rondje in een stad) en vraagt geen extra service. Fits kiest tussenpunten op een cirkel en routeert ertussen. BRouter blijft een optie als hoogte of ondergrond belangrijk worden.
 - **docker-compose.yml en Dockerfile blijven ongemoeid** (CLAUDE.md). BRouter draaien als extra compose-service is een voorstel voor Pieter; tot hij dat vraagt beschrijft `docs/hardlopen.md` hoe je BRouter los start.
 - **Migraties alleen toevoegend** (nieuwe tabellen en kolommen), zodat een oudere versie van de app met de nieuwe database blijft werken.
 - **Werk op branch `hardlopen`.** Niets op `main`: een push naar main zet de app live.
@@ -45,7 +45,7 @@ Sporen in Fits krijgen.
 - Routebibliotheek: favorieten, vaak gelopen, nog nooit gelopen.
 
 ## Open vragen voor Pieter
-1. BRouter als extra service in docker-compose.yml, of los ernaast?
+1. ~~BRouter~~ — niet nodig gebleken (zie Uitgangspunten).
 2. Startpunt: vaste thuislocatie in je account bewaren, of elke keer kiezen?
 3. FIT-bestanden (horloges) ook lezen? Strava-exports bevatten vaak `.fit.gz`. Gepland na fase 1.
 4. Mag de kaart OSM-tegels van openstreetmap.org gebruiken (prima voor persoonlijk gebruik), of liever een eigen tegelbron?

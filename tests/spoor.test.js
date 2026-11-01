@@ -99,3 +99,11 @@ test('CSV en activities.csv van Strava', () => {
 	assert.equal(i.get('2.fit').soort, 'Ride');
 	assert.equal(sleutelVan('activities\\ABC.TCX.GZ'), 'abc.tcx');
 });
+
+test('GPX schrijven en weer lezen', async () => {
+	const { schrijfGpx } = await import('#lib/spoor.js');
+	const g = leesGpx(schrijfGpx('Rondje <nieuw> & zo', [[52.09, 5.12], [52.091, 5.121]]));
+	assert.equal(g.naam, 'Rondje <nieuw> & zo');
+	assert.equal(g.soort, 'Run');
+	assert.deepEqual(g.punten.map((p) => [p.lat, p.lon]), [[52.09, 5.12], [52.091, 5.121]]);
+});

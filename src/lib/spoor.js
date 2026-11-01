@@ -258,3 +258,24 @@ export function stravaIndex(tekst) {
 
 /** 'activities/123.gpx.gz' → '123.gpx' */
 export const sleutelVan = (bestand) => bestand.split(/[\\/]/).pop().replace(/\.gz$/i, '').toLowerCase();
+
+// --- GPX schrijven (voor je horloge of telefoon) ---
+
+const xml = (s) => String(s).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]);
+
+/** GPX met één track. @param punten [[lat, lon]…] */
+export function schrijfGpx(naam, punten) {
+	const pt = punten.map(([lat, lon]) => `<trkpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}"/>`).join('\n   ');
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Fits" xmlns="http://www.topografix.com/GPX/1/1">
+ <metadata><name>${xml(naam)}</name></metadata>
+ <trk>
+  <name>${xml(naam)}</name>
+  <type>running</type>
+  <trkseg>
+   ${pt}
+  </trkseg>
+ </trk>
+</gpx>
+`;
+}

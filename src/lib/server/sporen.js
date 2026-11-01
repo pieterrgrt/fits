@@ -12,7 +12,7 @@ import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import { FITS_SPOREN } from '$app/env/private';
 import { map, een, alle, doe, transactie } from './db.js';
-import { lees, samenvatting, vereenvoudig, codeer, lokaal, stravaIndex, sleutelVan } from '#lib/spoor.js';
+import { lees, samenvatting, vereenvoudig, codeer, decodeer, lokaal, stravaIndex, sleutelVan } from '#lib/spoor.js';
 
 export const sporenMap = FITS_SPOREN ?? path.join(map, 'sporen');
 const uploadMap = (gebruikerId) => path.join(sporenMap, 'uploads', String(gebruikerId));
@@ -136,7 +136,7 @@ export function importeerMap(gebruikerId) {
 
 export const lijst = (gebruikerId, { soort = null, max = 100 } = {}) =>
 	alle(
-		`SELECT id, soort, naam, begin, datum, afstand, duur, bewegend, lijn FROM sporen WHERE gebruiker_id = ? ${soort ? 'AND soort = ?' : ''}
+		`SELECT id, soort, naam, begin, datum, afstand, duur, bewegend, lijn, gematcht FROM sporen WHERE gebruiker_id = ? ${soort ? 'AND soort = ?' : ''}
 		 ORDER BY begin IS NULL, begin DESC, id DESC LIMIT ?`,
 		...[gebruikerId, ...(soort ? [soort] : []), max]
 	);
@@ -144,7 +144,7 @@ export const lijst = (gebruikerId, { soort = null, max = 100 } = {}) =>
 export function totalen(gebruikerId, vanafMaand) {
 	return een(
 		`SELECT COUNT(*) aantal, COALESCE(SUM(afstand), 0) afstand,
-		        SUM(CASE WHEN datum >= ? THEN 1 ELSE 0 END) aantalMaand, COALESCE(SUM(CASE WHEN datum >= ? THEN afstand END), 0) afstandMaand
+		        COALESCE(SUM(CASE WHEN datum >= ? THEN 1 ELSE 0 END), 0) aantalMaand, COALESCE(SUM(CASE WHEN datum >= ? THEN afstand END), 0) afstandMaand
 		 FROM sporen WHERE gebruiker_id = ? AND soort IN ('Run', 'TrailRun', 'VirtualRun')`,
 		vanafMaand, vanafMaand, gebruikerId
 	);
@@ -152,10 +152,13 @@ export function totalen(gebruikerId, vanafMaand) {
 
 /** Verwijdert een spoor, de activiteit die Fits erbij maakte en het geüploade bestand. */
 export function verwijder(gebruikerId, id) {
-	const s = een('SELECT activiteit_id, hash FROM sporen WHERE id = ? AND gebruiker_id = ?', id, gebruikerId);
+	const s = een('SELECT activiteit_id, hash, zuid, west, noord, oost FROM sporen WHERE id = ? AND gebruiker_id = ?', id, gebruikerId);
 	if (!s) return;
 	transactie(() => {
 		doe('DELETE FROM sporen WHERE id = ? AND gebruiker_id = ?', id, gebruikerId);
+		// De gelopen straatstukken van dit spoor gaan mee (cascade); loopjes in hetzelfde gebied opnieuw op straten leggen,
+		// zodat stukken die je ook toen liep blijven tellen.
+		doe('UPDATE sporen SET gematcht = 0 WHERE gebruiker_id = ? AND gematcht = 1 AND noord >= ? AND zuid <= ? AND oost >= ? AND west <= ?', gebruikerId, s.zuid, s.noord, s.west, s.oost);
 		if (s.activiteit_id?.startsWith('spoor-') && !een('SELECT 1 FROM sporen WHERE activiteit_id = ?', s.activiteit_id)) {
 			doe('DELETE FROM activiteiten WHERE id = ? AND gebruiker_id = ?', s.activiteit_id, gebruikerId);
 		}
@@ -165,3 +168,23 @@ export function verwijder(gebruikerId, id) {
 
 /** Bij het verwijderen van een account: geüploade bestanden weg (de rijen gaan mee met de gebruiker). */
 export const verwijderAlles = (gebruikerId) => fs.rmSync(uploadMap(gebruikerId), { recursive: true, force: true });
+
+export const spoor = (gebruikerId, id) =>
+	een('SELECT id, soort, naam, begin, datum, afstand, duur, bewegend, punten, lijn, gematcht, bestand FROM sporen WHERE id = ? AND gebruiker_id = ?', id, gebruikerId);
+
+/** Alle lijnen, voor de kaart. */
+export const lijnen = (gebruikerId) => alle('SELECT id, lijn FROM sporen WHERE gebruiker_id = ? ORDER BY begin', gebruikerId);
+
+/** Waar je meestal begint (voor het startpunt van een rondje): het vaakst gebruikte vak van ~200 m. */
+export function gebruikelijkeStart(gebruikerId) {
+	const tellen = new Map();
+	for (const { lijn } of alle("SELECT lijn FROM sporen WHERE gebruiker_id = ? AND soort IN ('Run', 'TrailRun') ORDER BY begin DESC LIMIT 200", gebruikerId)) {
+		const [p] = decodeer(lijn);
+		if (!p) continue;
+		const k = `${Math.round(p[0] * 500)}:${Math.round(p[1] * 300)}`;
+		const t = tellen.get(k) ?? { n: 0, p };
+		t.n++;
+		tellen.set(k, t);
+	}
+	return [...tellen.values()].sort((a, b) => b.n - a.n)[0]?.p ?? null;
+}
